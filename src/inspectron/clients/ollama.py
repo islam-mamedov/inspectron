@@ -54,6 +54,7 @@ class OllamaVLMClient:
         model: str,
         timeout_seconds: float = 180.0,
         max_image_bytes: int = 10 * 1024 * 1024,
+        response_schema: dict[str, object] | str | None = None,
     ) -> None:
         if not base_url.startswith(("http://", "https://")):
             raise ValueError("base_url must start with http:// or https://")
@@ -65,6 +66,11 @@ class OllamaVLMClient:
         self.model = model
         self.timeout_seconds = timeout_seconds
         self.max_image_bytes = max_image_bytes
+
+        if response_schema is None:
+            self.response_schema = type(self).response_schema
+        else:
+            self.response_schema = response_schema
 
     def generate(
         self,
