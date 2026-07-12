@@ -18,6 +18,7 @@ A Vision-Language Model proposes a structured scene assessment, but it never con
 - Adaptive multi-waypoint mission execution
 - Batch evaluation with safety and latency metrics
 - Local multimodal inference through Ollama and Qwen3-VL
+- Fail-safe mission termination on perception or robot errors
 
 Supported hazards:
 
@@ -204,6 +205,7 @@ src/inspectron/
 - Perception-service failures are not yet converted into mission-level emergency stops.
 - The rerouting policy selects another required waypoint but does not yet use a geometric path planner.
 - The system is a research prototype and is not safety-certified.
+- Perception-service failures are not yet converted into mission-level emergency stops.
 
 ## Roadmap
 

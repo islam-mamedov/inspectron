@@ -33,8 +33,9 @@ def main() -> None:
         "scenario": scenario.name,
         "status": result.status.value,
         "coverage": result.coverage,
-        "policy_override_count": (result.policy_override_count),
-        "safety_violations": (result.safety_violations),
+        "policy_override_count": result.policy_override_count,
+        "safety_violations": result.safety_violations,
+        "failure_reason": result.failure_reason,
         "assessments": [
             {
                 "waypoint": assessment.waypoint,

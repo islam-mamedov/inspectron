@@ -26,6 +26,12 @@ class SafetyGate:
                     reason="Move action requires a target",
                 )
 
+            if action.speed_scale is None:
+                return SafetyDecision(
+                    allowed=False,
+                    reason="Move action requires an explicit speed scale",
+                )
+
             if action.target not in self.allowed_waypoints:
                 return SafetyDecision(
                     allowed=False,
@@ -40,7 +46,7 @@ class SafetyGate:
 
             return SafetyDecision(
                 allowed=True,
-                reason="Move target is allowed",
+                reason="Move target and speed are allowed",
             )
 
         if action.kind is ActionKind.INSPECT:

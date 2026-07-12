@@ -34,6 +34,7 @@ Current outputs:
 - robot action trace;
 - safety-policy overrides;
 - mission coverage and termination status;
+
 - evaluation and latency metrics.
 
 Physical robot drivers, mapping, localization, and geometric path planning are outside the current implementation.
