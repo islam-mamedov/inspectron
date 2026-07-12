@@ -60,7 +60,7 @@ class SiteSafetyVLMTests(unittest.TestCase):
             result = perception.analyze(
                 CapturedFrame(
                     waypoint="warehouse_a",
-                    asset_id="scene_a",
+                    scene_id="scene_a",
                     evidence_id="frame_001",
                     image_path=str(image_path),
                 )

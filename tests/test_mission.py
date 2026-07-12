@@ -79,14 +79,14 @@ class SiteSafetyMissionTests(unittest.TestCase):
                 "aisle_a": (
                     CapturedFrame(
                         waypoint="aisle_a",
-                        asset_id="scene_a",
+                        scene_id="scene_a",
                         evidence_id="human_0",
                     ),
                 ),
                 "aisle_b": (
                     CapturedFrame(
                         waypoint="aisle_b",
-                        asset_id="scene_b",
+                        scene_id="scene_b",
                         evidence_id="clear_0",
                     ),
                 ),

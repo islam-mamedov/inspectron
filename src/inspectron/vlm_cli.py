@@ -91,7 +91,7 @@ def main(
 
     frame = CapturedFrame(
         waypoint=arguments.waypoint,
-        asset_id=arguments.scene_id,
+        scene_id=arguments.scene_id,
         evidence_id=arguments.evidence_id,
         image_path=str(arguments.image),
     )

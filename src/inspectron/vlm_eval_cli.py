@@ -152,7 +152,7 @@ def evaluate_samples(
     for index, sample in enumerate(samples):
         frame = CapturedFrame(
             waypoint=f"evaluation_{index:04d}",
-            asset_id=sample.sample_id,
+            scene_id=sample.sample_id,
             evidence_id=sample.sample_id,
             image_path=str(data_root / sample.image),
         )

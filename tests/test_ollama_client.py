@@ -11,6 +11,9 @@ from inspectron.clients.ollama import (
     OllamaServiceError,
     OllamaVLMClient,
 )
+from inspectron.vlm import (
+    SITE_SAFETY_RESPONSE_SCHEMA,
+)
 
 
 class FakeHTTPResponse:
@@ -29,15 +32,17 @@ class FakeHTTPResponse:
 
 class OllamaVLMClientTests(unittest.TestCase):
     @patch("inspectron.clients.ollama.urlopen")
-    def test_sends_structured_request(
+    def test_sends_custom_structured_schema(
         self,
         mock_urlopen: object,
     ) -> None:
         model_output = json.dumps(
             {
-                "defect_type": "crack",
-                "confidence": 0.95,
-                "view_quality": 0.88,
+                "traversability": "restricted",
+                "hazards": ["debris"],
+                "recommended_action": "slow_down",
+                "confidence": 0.91,
+                "view_quality": 0.84,
             }
         )
 
@@ -52,15 +57,16 @@ class OllamaVLMClientTests(unittest.TestCase):
         client = OllamaVLMClient(
             base_url="http://localhost:11434",
             model="qwen3-vl:8b",
+            response_schema=(SITE_SAFETY_RESPONSE_SCHEMA),
         )
 
         with TemporaryDirectory() as directory:
-            image_path = Path(directory) / "column.jpg"
+            image_path = Path(directory) / "aisle.jpg"
             image_path.write_bytes(b"fake-image")
 
             result = client.generate(
                 image_path=image_path,
-                prompt="Inspect this column",
+                prompt="Assess this aisle",
             )
 
         self.assertEqual(result, model_output)
@@ -70,16 +76,9 @@ class OllamaVLMClientTests(unittest.TestCase):
 
         self.assertFalse(request_payload["stream"])
         self.assertTrue(request_payload["think"])
-
         self.assertEqual(
-            request_payload["format"]["properties"]["defect_type"]["enum"],
-            [
-                "none",
-                "crack",
-                "corrosion",
-                "spalling",
-                "unknown",
-            ],
+            request_payload["format"],
+            SITE_SAFETY_RESPONSE_SCHEMA,
         )
 
         encoded_image = request_payload["messages"][0]["images"][0]
@@ -108,13 +107,13 @@ class OllamaVLMClientTests(unittest.TestCase):
         )
 
         with TemporaryDirectory() as directory:
-            image_path = Path(directory) / "column.png"
+            image_path = Path(directory) / "aisle.png"
             image_path.write_bytes(b"fake-image")
 
             with self.assertRaises(OllamaServiceError):
                 client.generate(
                     image_path=image_path,
-                    prompt="Inspect this column",
+                    prompt="Assess this aisle",
                 )
 
 

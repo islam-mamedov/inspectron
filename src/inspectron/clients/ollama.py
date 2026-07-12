@@ -15,38 +15,6 @@ class OllamaServiceError(RuntimeError):
 class OllamaVLMClient:
     """Calls Ollama's native API with structured output."""
 
-    response_schema = {
-        "type": "object",
-        "properties": {
-            "defect_type": {
-                "type": "string",
-                "enum": [
-                    "none",
-                    "crack",
-                    "corrosion",
-                    "spalling",
-                    "unknown",
-                ],
-            },
-            "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-            },
-            "view_quality": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-            },
-        },
-        "required": [
-            "defect_type",
-            "confidence",
-            "view_quality",
-        ],
-        "additionalProperties": False,
-    }
-
     def __init__(
         self,
         *,
@@ -54,7 +22,7 @@ class OllamaVLMClient:
         model: str,
         timeout_seconds: float = 180.0,
         max_image_bytes: int = 10 * 1024 * 1024,
-        response_schema: dict[str, object] | str | None = None,
+        response_schema: dict[str, object] | str = "json",
     ) -> None:
         if not base_url.startswith(("http://", "https://")):
             raise ValueError("base_url must start with http:// or https://")
@@ -67,10 +35,10 @@ class OllamaVLMClient:
         self.timeout_seconds = timeout_seconds
         self.max_image_bytes = max_image_bytes
 
-        if response_schema is None:
-            self.response_schema = type(self).response_schema
-        else:
-            self.response_schema = response_schema
+        if not isinstance(response_schema, (dict, str)):
+            raise TypeError("response_schema must be a dictionary or the string 'json'")
+
+        self.response_schema = response_schema
 
     def generate(
         self,

@@ -160,26 +160,26 @@ def baseline_site_safety_scenario(
             "aisle_a": (
                 CapturedFrame(
                     waypoint="aisle_a",
-                    asset_id="scene_a",
+                    scene_id="scene_a",
                     evidence_id="aisle_a_0",
                 ),
             ),
             "aisle_b": (
                 CapturedFrame(
                     waypoint="aisle_b",
-                    asset_id="scene_b",
+                    scene_id="scene_b",
                     evidence_id="aisle_b_0",
                 ),
             ),
             "aisle_c": (
                 CapturedFrame(
                     waypoint="aisle_c",
-                    asset_id="scene_c",
+                    scene_id="scene_c",
                     evidence_id="aisle_c_0",
                 ),
                 CapturedFrame(
                     waypoint="aisle_c",
-                    asset_id="scene_c",
+                    scene_id="scene_c",
                     evidence_id="aisle_c_1",
                     view_index=1,
                 ),
