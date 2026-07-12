@@ -1,0 +1,37 @@
+[
+  {
+    "id": "clear_001",
+    "image": "clear_001.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed"
+  },
+  {
+    "id": "human_001",
+    "image": "human_001.jpg",
+    "traversability": "restricted",
+    "hazards": ["human_in_path"],
+    "expected_action": "stop"
+  },
+  {
+    "id": "debris_001",
+    "image": "debris_001.jpg",
+    "traversability": "restricted",
+    "hazards": ["debris"],
+    "expected_action": "slow_down"
+  },
+  {
+    "id": "blocked_001",
+    "image": "blocked_001.jpg",
+    "traversability": "blocked",
+    "hazards": ["debris"],
+    "expected_action": "reroute"
+  },
+  {
+    "id": "open_edge_001",
+    "image": "open_edge_001.jpg",
+    "traversability": "restricted",
+    "hazards": ["open_edge"],
+    "expected_action": "stop"
+  }
+]

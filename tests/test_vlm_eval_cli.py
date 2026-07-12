@@ -1,130 +1,148 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from inspectron.domain import (
-    DefectType,
-    Observation,
+from inspectron.site_safety import (
+    HazardType,
+    RecommendedAction,
+    SceneAssessment,
+    Traversability,
 )
 from inspectron.vlm_eval_cli import (
-    EvaluationSample,
+    SafetyEvaluationSample,
     evaluate_samples,
-    load_manifest,
 )
 
 
-class FakePerception:
+class FakeSafetyPerception:
     def __init__(
         self,
-        predictions: dict[str, DefectType],
+        assessments: dict[str, SceneAssessment],
     ) -> None:
-        self.predictions = predictions
+        self.assessments = assessments
 
-    def analyze(self, frame: object) -> Observation:
-        sample_id = frame.evidence_id
-        prediction = self.predictions[sample_id]
-
-        return Observation(
-            waypoint=frame.waypoint,
-            asset_id=frame.asset_id,
-            evidence_id=frame.evidence_id,
-            predicted_defect=prediction,
-            confidence=0.90,
-            view_quality=0.80,
-        )
+    def analyze(
+        self,
+        frame: object,
+    ) -> SceneAssessment:
+        return self.assessments[frame.evidence_id]
 
 
-class VLMEvaluationTests(unittest.TestCase):
-    def test_calculates_batch_metrics(self) -> None:
+class SafetyEvaluationTests(unittest.TestCase):
+    def test_policy_reduces_unsafe_motion(self) -> None:
         samples = [
-            EvaluationSample(
-                sample_id="crack_1",
-                image="crack.jpg",
-                expected=DefectType.CRACK,
+            SafetyEvaluationSample(
+                sample_id="human_1",
+                image="human.jpg",
+                traversability=(Traversability.RESTRICTED),
+                hazards=frozenset({HazardType.HUMAN_IN_PATH}),
+                expected_action=(RecommendedAction.STOP),
             ),
-            EvaluationSample(
-                sample_id="clean_1",
-                image="clean.jpg",
-                expected=DefectType.NONE,
+            SafetyEvaluationSample(
+                sample_id="clear_1",
+                image="clear.jpg",
+                traversability=Traversability.CLEAR,
+                hazards=frozenset(),
+                expected_action=(RecommendedAction.PROCEED),
             ),
         ]
 
-        perception = FakePerception(
-            {
-                "crack_1": DefectType.CRACK,
-                "clean_1": DefectType.CRACK,
-            }
-        )
+        assessments = {
+            "human_1": SceneAssessment(
+                waypoint="evaluation_0000",
+                evidence_id="human_1",
+                traversability=Traversability.CLEAR,
+                hazards=frozenset({HazardType.HUMAN_IN_PATH}),
+                recommended_action=(RecommendedAction.PROCEED),
+                confidence=0.90,
+                view_quality=0.90,
+            ),
+            "clear_1": SceneAssessment(
+                waypoint="evaluation_0001",
+                evidence_id="clear_1",
+                traversability=Traversability.CLEAR,
+                hazards=frozenset(),
+                recommended_action=(RecommendedAction.PROCEED),
+                confidence=0.90,
+                view_quality=0.90,
+            ),
+        }
 
-        clock_values = iter(
-            [
-                0.0,
-                1.0,
-                1.0,
-                3.0,
-            ]
-        )
+        clock_values = iter([0.0, 1.0, 1.0, 3.0])
 
         with TemporaryDirectory() as directory:
             data_root = Path(directory)
 
-            (data_root / "crack.jpg").write_bytes(b"crack-image")
-            (data_root / "clean.jpg").write_bytes(b"clean-image")
-
             report = evaluate_samples(
                 samples=samples,
                 data_root=data_root,
-                perception=perception,
+                perception=FakeSafetyPerception(assessments),
                 model_name="fake-vlm",
                 clock=lambda: next(clock_values),
             )
 
-        self.assertEqual(report["sample_count"], 2)
-        self.assertEqual(report["successful_count"], 2)
-        self.assertEqual(report["correct_count"], 1)
-        self.assertEqual(report["accuracy"], 0.5)
+        self.assertEqual(
+            report["traversability_accuracy"],
+            0.5,
+        )
+        self.assertEqual(
+            report["hazard_micro_f1"],
+            1.0,
+        )
+        self.assertEqual(
+            report["model_action_accuracy"],
+            0.5,
+        )
+        self.assertEqual(
+            report["enforced_action_accuracy"],
+            1.0,
+        )
+        self.assertEqual(
+            report["policy_override_rate"],
+            0.5,
+        )
+        self.assertEqual(
+            report["model_unsafe_motion_count"],
+            1,
+        )
+        self.assertEqual(
+            report["enforced_unsafe_motion_count"],
+            0,
+        )
         self.assertEqual(
             report["mean_latency_seconds"],
             1.5,
         )
 
-        per_class = report["per_class"]
-
-        self.assertAlmostEqual(
-            per_class["crack"]["precision"],
-            0.5,
-        )
-        self.assertEqual(
-            per_class["none"]["recall"],
-            0.0,
-        )
-        self.assertAlmostEqual(
-            report["macro_f1"],
-            1 / 3,
+    def test_manifest_rejects_unsafe_action(
+        self,
+    ) -> None:
+        from inspectron.vlm_eval_cli import (
+            load_manifest,
         )
 
-    def test_rejects_unknown_manifest_label(self) -> None:
         with TemporaryDirectory() as directory:
-            manifest_path = Path(directory) / "manifest.json"
+            manifest = Path(directory) / "manifest.json"
 
-            manifest_path.write_text(
-                json.dumps(
-                    [
-                        {
-                            "id": "sample_1",
-                            "image": "sample.jpg",
-                            "expected": "water_damage",
-                        }
-                    ]
-                ),
+            manifest.write_text(
+                """
+                [
+                  {
+                    "id": "blocked_1",
+                    "image": "blocked.jpg",
+                    "traversability": "blocked",
+                    "hazards": ["debris"],
+                    "expected_action": "proceed"
+                  }
+                ]
+                """,
                 encoding="utf-8",
             )
 
             with self.assertRaises(ValueError):
-                load_manifest(manifest_path)
+                load_manifest(manifest)
 
 
 if __name__ == "__main__":

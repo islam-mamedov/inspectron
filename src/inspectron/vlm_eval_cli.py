@@ -7,21 +7,43 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from typing import Protocol
 
 from inspectron.clients.ollama import OllamaVLMClient
-from inspectron.domain import CapturedFrame, DefectType
-from inspectron.ports import PerceptionPort
-from inspectron.vlm import VLMPerception
+from inspectron.domain import CapturedFrame
+from inspectron.site_safety import (
+    HazardType,
+    RecommendedAction,
+    SceneAssessment,
+    Traversability,
+    find_consistency_violations,
+    resolve_safe_action,
+)
+from inspectron.site_safety_vlm import (
+    SITE_SAFETY_RESPONSE_SCHEMA,
+    SiteSafetyVLMPerception,
+)
 
 
 @dataclass(frozen=True, slots=True)
-class EvaluationSample:
+class SafetyEvaluationSample:
     sample_id: str
     image: str
-    expected: DefectType
+    traversability: Traversability
+    hazards: frozenset[HazardType]
+    expected_action: RecommendedAction
 
 
-def load_manifest(path: Path) -> list[EvaluationSample]:
+class SafetyPerception(Protocol):
+    def analyze(
+        self,
+        frame: CapturedFrame,
+    ) -> SceneAssessment: ...
+
+
+def load_manifest(
+    path: Path,
+) -> list[SafetyEvaluationSample]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
@@ -30,18 +52,28 @@ def load_manifest(path: Path) -> list[EvaluationSample]:
     if not isinstance(payload, list):
         raise ValueError("Manifest must contain a JSON array")
 
-    samples: list[EvaluationSample] = []
+    samples: list[SafetyEvaluationSample] = []
 
     for index, item in enumerate(payload):
         if not isinstance(item, dict):
             raise ValueError(f"Manifest item {index} must be an object")
 
-        try:
-            sample_id = item["id"]
-            image = item["image"]
-            expected_value = item["expected"]
-        except KeyError as error:
-            raise ValueError(f"Manifest item {index} is missing field: {error.args[0]}") from error
+        required = {
+            "id",
+            "image",
+            "traversability",
+            "hazards",
+            "expected_action",
+        }
+
+        missing = required - item.keys()
+
+        if missing:
+            raise ValueError(f"Manifest item {index} is missing: {sorted(missing)}")
+
+        sample_id = item["id"]
+        image = item["image"]
+        raw_hazards = item["hazards"]
 
         if not isinstance(sample_id, str) or not sample_id:
             raise ValueError(f"Manifest item {index} has an invalid id")
@@ -54,18 +86,49 @@ def load_manifest(path: Path) -> list[EvaluationSample]:
         if image_path.is_absolute() or ".." in image_path.parts:
             raise ValueError(f"Manifest item {index} must use a safe relative image path")
 
+        if not isinstance(raw_hazards, list):
+            raise ValueError(f"Manifest item {index} hazards must be an array")
+
+        if not all(isinstance(value, str) for value in raw_hazards):
+            raise ValueError(f"Manifest item {index} hazards must contain strings")
+
+        if len(raw_hazards) != len(set(raw_hazards)):
+            raise ValueError(f"Manifest item {index} contains duplicate hazards")
+
         try:
-            expected = DefectType(expected_value)
+            traversability = Traversability(item["traversability"])
+            hazards = frozenset(HazardType(value) for value in raw_hazards)
+            expected_action = RecommendedAction(item["expected_action"])
         except ValueError as error:
+            raise ValueError(f"Manifest item {index} contains an unsupported label") from error
+
+        if traversability is Traversability.CLEAR and hazards:
+            raise ValueError(f"Manifest item {index} cannot be clear while containing hazards")
+
+        expected_assessment = SceneAssessment(
+            waypoint=sample_id,
+            evidence_id=sample_id,
+            traversability=traversability,
+            hazards=hazards,
+            recommended_action=expected_action,
+            confidence=1.0,
+            view_quality=1.0,
+        )
+
+        resolved_action = resolve_safe_action(expected_assessment)
+
+        if expected_action is not resolved_action:
             raise ValueError(
-                f"Manifest item {index} has an unsupported label: {expected_value}"
-            ) from error
+                f"Manifest item {index} expected action must be {resolved_action.value}"
+            )
 
         samples.append(
-            EvaluationSample(
+            SafetyEvaluationSample(
                 sample_id=sample_id,
                 image=image,
-                expected=expected,
+                traversability=traversability,
+                hazards=hazards,
+                expected_action=expected_action,
             )
         )
 
@@ -77,9 +140,9 @@ def load_manifest(path: Path) -> list[EvaluationSample]:
 
 def evaluate_samples(
     *,
-    samples: Sequence[EvaluationSample],
+    samples: Sequence[SafetyEvaluationSample],
     data_root: Path,
-    perception: PerceptionPort,
+    perception: SafetyPerception,
     model_name: str,
     clock: Callable[[], float] = perf_counter,
 ) -> dict[str, object]:
@@ -87,129 +150,218 @@ def evaluate_samples(
     latencies: list[float] = []
 
     for index, sample in enumerate(samples):
-        image_path = data_root / sample.image
-
         frame = CapturedFrame(
             waypoint=f"evaluation_{index:04d}",
             asset_id=sample.sample_id,
             evidence_id=sample.sample_id,
-            image_path=str(image_path),
+            image_path=str(data_root / sample.image),
         )
 
         started_at = clock()
 
         try:
-            observation = perception.analyze(frame)
+            assessment = perception.analyze(frame)
         except Exception as error:
             latency = clock() - started_at
             latencies.append(latency)
 
             results.append(
-                {
-                    "id": sample.sample_id,
-                    "image": sample.image,
-                    "expected": sample.expected.value,
-                    "predicted": None,
-                    "correct": False,
-                    "confidence": None,
-                    "view_quality": None,
-                    "latency_seconds": latency,
-                    "error": (f"{type(error).__name__}: {error}"),
-                }
+                _error_result(
+                    sample=sample,
+                    latency=latency,
+                    error=error,
+                )
             )
-
             continue
 
         latency = clock() - started_at
         latencies.append(latency)
 
-        predicted = observation.predicted_defect
-        correct = predicted is sample.expected
+        enforced_action = resolve_safe_action(assessment)
+
+        violations = find_consistency_violations(assessment)
 
         results.append(
             {
                 "id": sample.sample_id,
                 "image": sample.image,
-                "expected": sample.expected.value,
-                "predicted": predicted.value,
-                "correct": correct,
-                "confidence": observation.confidence,
-                "view_quality": observation.view_quality,
+                "expected_traversability": (sample.traversability.value),
+                "predicted_traversability": (assessment.traversability.value),
+                "expected_hazards": sorted(hazard.value for hazard in sample.hazards),
+                "predicted_hazards": sorted(hazard.value for hazard in assessment.hazards),
+                "expected_action": (sample.expected_action.value),
+                "model_action": (assessment.recommended_action.value),
+                "enforced_action": (enforced_action.value),
+                "traversability_correct": (assessment.traversability is sample.traversability),
+                "hazards_exact": (assessment.hazards == sample.hazards),
+                "model_action_correct": (assessment.recommended_action is sample.expected_action),
+                "enforced_action_correct": (enforced_action is sample.expected_action),
+                "policy_overrode_model": (enforced_action is not assessment.recommended_action),
+                "consistency_violations": list(violations),
+                "confidence": assessment.confidence,
+                "view_quality": assessment.view_quality,
                 "latency_seconds": latency,
                 "error": None,
             }
         )
 
-    correct_count = sum(bool(result["correct"]) for result in results)
+    return _build_report(
+        model_name=model_name,
+        results=results,
+        latencies=latencies,
+    )
 
-    successful_count = sum(result["error"] is None for result in results)
 
-    accuracy = correct_count / len(results)
-    per_class = _calculate_per_class_metrics(results)
-
-    macro_f1 = sum(metrics["f1"] for metrics in per_class.values()) / len(per_class)
-
-    mean_latency = sum(latencies) / len(latencies)
-
+def _error_result(
+    *,
+    sample: SafetyEvaluationSample,
+    latency: float,
+    error: Exception,
+) -> dict[str, object]:
     return {
-        "model": model_name,
-        "sample_count": len(results),
-        "successful_count": successful_count,
-        "error_count": len(results) - successful_count,
-        "correct_count": correct_count,
-        "accuracy": accuracy,
-        "macro_f1": macro_f1,
-        "mean_latency_seconds": mean_latency,
-        "per_class": per_class,
-        "results": results,
+        "id": sample.sample_id,
+        "image": sample.image,
+        "expected_traversability": (sample.traversability.value),
+        "predicted_traversability": None,
+        "expected_hazards": sorted(hazard.value for hazard in sample.hazards),
+        "predicted_hazards": [],
+        "expected_action": (sample.expected_action.value),
+        "model_action": None,
+        "enforced_action": None,
+        "traversability_correct": False,
+        "hazards_exact": not sample.hazards,
+        "model_action_correct": False,
+        "enforced_action_correct": False,
+        "policy_overrode_model": False,
+        "consistency_violations": [],
+        "confidence": None,
+        "view_quality": None,
+        "latency_seconds": latency,
+        "error": f"{type(error).__name__}: {error}",
     }
 
 
-def _calculate_per_class_metrics(
+def _build_report(
+    *,
+    model_name: str,
     results: Sequence[dict[str, object]],
-) -> dict[str, dict[str, float | int]]:
-    labels = sorted({str(result["expected"]) for result in results})
+    latencies: Sequence[float],
+) -> dict[str, object]:
+    sample_count = len(results)
 
-    metrics: dict[str, dict[str, float | int]] = {}
+    successful_count = sum(result["error"] is None for result in results)
 
-    for label in labels:
-        true_positives = sum(
-            result["expected"] == label and result["predicted"] == label for result in results
-        )
+    traversability_accuracy = (
+        sum(bool(result["traversability_correct"]) for result in results) / sample_count
+    )
 
-        false_positives = sum(
-            result["expected"] != label and result["predicted"] == label for result in results
-        )
+    hazard_exact_match = sum(bool(result["hazards_exact"]) for result in results) / sample_count
 
-        false_negatives = sum(
-            result["expected"] == label and result["predicted"] != label for result in results
-        )
+    model_action_accuracy = (
+        sum(bool(result["model_action_correct"]) for result in results) / sample_count
+    )
 
-        precision_denominator = true_positives + false_positives
-        recall_denominator = true_positives + false_negatives
+    enforced_action_accuracy = (
+        sum(bool(result["enforced_action_correct"]) for result in results) / sample_count
+    )
 
-        precision = true_positives / precision_denominator if precision_denominator else 0.0
+    policy_override_count = sum(bool(result["policy_overrode_model"]) for result in results)
 
-        recall = true_positives / recall_denominator if recall_denominator else 0.0
+    hazard_metrics = _hazard_metrics(results)
 
-        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    model_unsafe_motion_count = _unsafe_motion_count(
+        results,
+        action_field="model_action",
+    )
 
-        metrics[label] = {
-            "support": recall_denominator,
-            "true_positives": true_positives,
-            "false_positives": false_positives,
-            "false_negatives": false_negatives,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-        }
+    enforced_unsafe_motion_count = _unsafe_motion_count(
+        results,
+        action_field="enforced_action",
+    )
 
-    return metrics
+    return {
+        "model": model_name,
+        "sample_count": sample_count,
+        "successful_count": successful_count,
+        "error_count": (sample_count - successful_count),
+        "traversability_accuracy": (traversability_accuracy),
+        "hazard_exact_match": hazard_exact_match,
+        "hazard_micro_precision": (hazard_metrics["precision"]),
+        "hazard_micro_recall": (hazard_metrics["recall"]),
+        "hazard_micro_f1": hazard_metrics["f1"],
+        "model_action_accuracy": (model_action_accuracy),
+        "enforced_action_accuracy": (enforced_action_accuracy),
+        "policy_override_count": (policy_override_count),
+        "policy_override_rate": (policy_override_count / sample_count),
+        "model_unsafe_motion_count": (model_unsafe_motion_count),
+        "enforced_unsafe_motion_count": (enforced_unsafe_motion_count),
+        "mean_latency_seconds": (sum(latencies) / len(latencies)),
+        "results": list(results),
+    }
+
+
+def _hazard_metrics(
+    results: Sequence[dict[str, object]],
+) -> dict[str, float | int]:
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+
+    for result in results:
+        expected = set(result["expected_hazards"])
+        predicted = set(result["predicted_hazards"])
+
+        true_positives += len(expected & predicted)
+        false_positives += len(predicted - expected)
+        false_negatives += len(expected - predicted)
+
+    precision_denominator = true_positives + false_positives
+    recall_denominator = true_positives + false_negatives
+
+    precision = (
+        true_positives / precision_denominator
+        if precision_denominator
+        else float(false_negatives == 0)
+    )
+
+    recall = true_positives / recall_denominator if recall_denominator else 1.0
+
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    return {
+        "true_positives": true_positives,
+        "false_positives": false_positives,
+        "false_negatives": false_negatives,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+    }
+
+
+def _unsafe_motion_count(
+    results: Sequence[dict[str, object]],
+    *,
+    action_field: str,
+) -> int:
+    must_not_move = {
+        RecommendedAction.STOP.value,
+        RecommendedAction.REROUTE.value,
+    }
+
+    permits_motion = {
+        RecommendedAction.PROCEED.value,
+        RecommendedAction.SLOW_DOWN.value,
+    }
+
+    return sum(
+        result["expected_action"] in must_not_move and result[action_field] in permits_motion
+        for result in results
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Evaluate a VLM on labeled images.",
+        description=("Evaluate embodied VLM site-safety assessments."),
     )
 
     parser.add_argument(
@@ -239,7 +391,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("artifacts/metrics/vlm_smoke.json"),
+        default=Path("artifacts/metrics/site_safety_smoke.json"),
     )
 
     return parser
@@ -249,15 +401,15 @@ def main(
     argv: Sequence[str] | None = None,
 ) -> None:
     arguments = build_parser().parse_args(argv)
-
     samples = load_manifest(arguments.manifest)
 
     client = OllamaVLMClient(
         base_url=arguments.base_url,
         model=arguments.model,
+        response_schema=SITE_SAFETY_RESPONSE_SCHEMA,
     )
 
-    perception = VLMPerception(client)
+    perception = SiteSafetyVLMPerception(client)
 
     report = evaluate_samples(
         samples=samples,
@@ -276,15 +428,24 @@ def main(
         encoding="utf-8",
     )
 
-    summary = {
-        "model": report["model"],
-        "sample_count": report["sample_count"],
-        "successful_count": report["successful_count"],
-        "accuracy": report["accuracy"],
-        "macro_f1": report["macro_f1"],
-        "mean_latency_seconds": report["mean_latency_seconds"],
-        "output": str(arguments.output),
-    }
+    summary_keys = (
+        "model",
+        "sample_count",
+        "successful_count",
+        "traversability_accuracy",
+        "hazard_exact_match",
+        "hazard_micro_f1",
+        "model_action_accuracy",
+        "enforced_action_accuracy",
+        "policy_override_rate",
+        "model_unsafe_motion_count",
+        "enforced_unsafe_motion_count",
+        "mean_latency_seconds",
+    )
+
+    summary = {key: report[key] for key in summary_keys}
+
+    summary["output"] = str(arguments.output)
 
     print(json.dumps(summary, indent=2))
 
