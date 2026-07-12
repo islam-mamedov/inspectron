@@ -49,25 +49,14 @@ def score_episode(
     result: EpisodeResult,
     ground_truth: dict[str, DefectType],
 ) -> EpisodeMetrics:
-    predicted = {
-        (finding.asset_id, finding.defect_type)
-        for finding in result.findings
-    }
+    predicted = {(finding.asset_id, finding.defect_type) for finding in result.findings}
 
     expected = set(ground_truth.items())
     true_positives = len(predicted & expected)
 
-    precision = (
-        true_positives / len(predicted)
-        if predicted
-        else float(not expected)
-    )
+    precision = true_positives / len(predicted) if predicted else float(not expected)
 
-    recall = (
-        true_positives / len(expected)
-        if expected
-        else 1.0
-    )
+    recall = true_positives / len(expected) if expected else 1.0
 
     return EpisodeMetrics(
         precision=precision,

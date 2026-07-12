@@ -10,8 +10,7 @@ from inspectron.domain import CapturedFrame, DefectType, Observation
 class VLMClient(Protocol):
     """Interface for local or remotely served vision-language models."""
 
-    def generate(self, *, image_path: Path, prompt: str) -> str:
-        ...
+    def generate(self, *, image_path: Path, prompt: str) -> str: ...
 
 
 class VLMOutputError(ValueError):
@@ -26,16 +25,12 @@ class VLMPerception:
 
     def analyze(self, frame: CapturedFrame) -> Observation:
         if frame.image_path is None:
-            raise ValueError(
-                f"Frame {frame.evidence_id} has no image path"
-            )
+            raise ValueError(f"Frame {frame.evidence_id} has no image path")
 
         image_path = Path(frame.image_path)
 
         if not image_path.is_file():
-            raise FileNotFoundError(
-                f"Inspection image does not exist: {image_path}"
-            )
+            raise FileNotFoundError(f"Inspection image does not exist: {image_path}")
 
         raw_output = self.client.generate(
             image_path=image_path,
@@ -88,9 +83,7 @@ Requirements:
         try:
             payload = json.loads(raw_output)
         except json.JSONDecodeError as error:
-            raise VLMOutputError(
-                "VLM output is not valid JSON"
-            ) from error
+            raise VLMOutputError("VLM output is not valid JSON") from error
 
         if not isinstance(payload, dict):
             raise VLMOutputError("VLM output must be a JSON object")
@@ -104,36 +97,24 @@ Requirements:
         missing_fields = required_fields - payload.keys()
 
         if missing_fields:
-            raise VLMOutputError(
-                f"VLM output is missing fields: {sorted(missing_fields)}"
-            )
+            raise VLMOutputError(f"VLM output is missing fields: {sorted(missing_fields)}")
 
         try:
-            defect_type = DefectType(
-                str(payload["defect_type"]).lower()
-            )
+            defect_type = DefectType(str(payload["defect_type"]).lower())
         except ValueError as error:
-            raise VLMOutputError(
-                f"Unsupported defect type: {payload['defect_type']}"
-            ) from error
+            raise VLMOutputError(f"Unsupported defect type: {payload['defect_type']}") from error
 
         try:
             confidence = float(payload["confidence"])
             view_quality = float(payload["view_quality"])
         except (TypeError, ValueError) as error:
-            raise VLMOutputError(
-                "Confidence and view quality must be numeric"
-            ) from error
+            raise VLMOutputError("Confidence and view quality must be numeric") from error
 
         if not 0.0 <= confidence <= 1.0:
-            raise VLMOutputError(
-                "Confidence must be between 0 and 1"
-            )
+            raise VLMOutputError("Confidence must be between 0 and 1")
 
         if not 0.0 <= view_quality <= 1.0:
-            raise VLMOutputError(
-                "View quality must be between 0 and 1"
-            )
+            raise VLMOutputError("View quality must be between 0 and 1")
 
         return {
             "defect_type": defect_type,

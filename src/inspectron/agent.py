@@ -40,8 +40,7 @@ class InspectionAgent:
         self.visited_waypoints.add(observation.waypoint)
 
         supported = (
-            observation.predicted_defect
-            not in {DefectType.NONE, DefectType.UNKNOWN}
+            observation.predicted_defect not in {DefectType.NONE, DefectType.UNKNOWN}
             and observation.confidence >= self.confidence_threshold
             and observation.view_quality >= self.quality_threshold
         )
@@ -56,11 +55,7 @@ class InspectionAgent:
         previous_confidence = 0.0
 
         if existing is not None:
-            evidence_ids = tuple(
-                dict.fromkeys(
-                    (*existing.evidence_ids, observation.evidence_id)
-                )
-            )
+            evidence_ids = tuple(dict.fromkeys((*existing.evidence_ids, observation.evidence_id)))
             previous_confidence = existing.confidence
 
         self.findings[key] = Finding(
@@ -76,9 +71,7 @@ class InspectionAgent:
             or observation.view_quality < self.quality_threshold
         )
 
-        another_view_is_available = (
-            observation.view_index + 1 < self.max_views_per_waypoint
-        )
+        another_view_is_available = observation.view_index + 1 < self.max_views_per_waypoint
 
         if evidence_is_weak and another_view_is_available:
             return Action(

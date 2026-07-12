@@ -6,6 +6,7 @@ import os
 from collections.abc import Sequence
 from pathlib import Path
 
+from inspectron.clients.ollama import OllamaVLMClient
 from inspectron.clients.openai_compatible import (
     OpenAICompatibleVLMClient,
 )
@@ -27,18 +28,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--base-url",
         default=os.getenv("INSPECTRON_VLM_BASE_URL"),
-        help=(
-            "OpenAI-compatible server URL. Alternatively set "
-            "INSPECTRON_VLM_BASE_URL."
-        ),
+        help=("OpenAI-compatible server URL. Alternatively set INSPECTRON_VLM_BASE_URL."),
     )
     parser.add_argument(
         "--model",
         default=os.getenv("INSPECTRON_VLM_MODEL"),
-        help=(
-            "Model name exposed by the server. Alternatively set "
-            "INSPECTRON_VLM_MODEL."
-        ),
+        help=("Model name exposed by the server. Alternatively set INSPECTRON_VLM_MODEL."),
     )
     parser.add_argument(
         "--waypoint",
@@ -53,6 +48,13 @@ def build_parser() -> argparse.ArgumentParser:
         default="manual_image_0",
     )
 
+    parser.add_argument(
+        "--provider",
+        choices=("openai", "ollama"),
+        default="openai",
+        help="Inference API provider.",
+    )
+
     return parser
 
 
@@ -61,20 +63,22 @@ def main(argv: Sequence[str] | None = None) -> None:
     arguments = parser.parse_args(argv)
 
     if not arguments.base_url:
-        parser.error(
-            "--base-url or INSPECTRON_VLM_BASE_URL is required"
-        )
+        parser.error("--base-url or INSPECTRON_VLM_BASE_URL is required")
 
     if not arguments.model:
-        parser.error(
-            "--model or INSPECTRON_VLM_MODEL is required"
-        )
+        parser.error("--model or INSPECTRON_VLM_MODEL is required")
 
-    client = OpenAICompatibleVLMClient(
-        base_url=arguments.base_url,
-        model=arguments.model,
-        api_key=os.getenv("INSPECTRON_VLM_API_KEY"),
-    )
+    if arguments.provider == "ollama":
+        client = OllamaVLMClient(
+            base_url=arguments.base_url,
+            model=arguments.model,
+        )
+    else:
+        client = OpenAICompatibleVLMClient(
+            base_url=arguments.base_url,
+            model=arguments.model,
+            api_key=os.getenv("INSPECTRON_VLM_API_KEY"),
+        )
 
     perception = VLMPerception(client)
 

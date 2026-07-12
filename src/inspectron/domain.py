@@ -17,7 +17,8 @@ class ActionKind(StrEnum):
     INSPECT = "inspect"
     REPORT = "report"
     STOP = "stop"
-    
+
+
 @dataclass(frozen=True, slots=True)
 class CapturedFrame:
     """A camera frame captured by a robot at an inspection waypoint."""
@@ -27,6 +28,7 @@ class CapturedFrame:
     evidence_id: str
     view_index: int = 0
     image_path: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class Observation:

@@ -95,9 +95,7 @@ class MockPerception:
         try:
             prediction = self.predictions[frame.evidence_id]
         except KeyError as error:
-            raise ValueError(
-                f"No prediction exists for evidence: {frame.evidence_id}"
-            ) from error
+            raise ValueError(f"No prediction exists for evidence: {frame.evidence_id}") from error
 
         self.analyzed_evidence_ids.append(frame.evidence_id)
 

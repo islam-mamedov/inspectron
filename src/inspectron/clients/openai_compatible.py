@@ -30,9 +30,7 @@ class OpenAICompatibleVLMClient:
         if not model.strip():
             raise ValueError("model cannot be empty")
 
-        self.endpoint = (
-            f"{base_url.rstrip('/')}/v1/chat/completions"
-        )
+        self.endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
         self.model = model
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
@@ -44,6 +42,14 @@ class OpenAICompatibleVLMClient:
         payload = {
             "model": self.model,
             "temperature": 0,
+            "max_tokens": 2048,
+            "reasoning_effort": "none",
+            "reasoning": {
+                "effort": "none",
+            },
+            "response_format": {
+                "type": "json_object",
+            },
             "messages": [
                 {
                     "role": "user",
@@ -86,42 +92,30 @@ class OpenAICompatibleVLMClient:
         except HTTPError as error:
             body = error.read().decode("utf-8", errors="replace")
 
-            raise VLMServiceError(
-                f"VLM server returned HTTP {error.code}: {body[:500]}"
-            ) from error
+            raise VLMServiceError(f"VLM server returned HTTP {error.code}: {body[:500]}") from error
         except URLError as error:
-            raise VLMServiceError(
-                f"Could not reach VLM server: {error.reason}"
-            ) from error
+            raise VLMServiceError(f"Could not reach VLM server: {error.reason}") from error
 
         try:
             response_payload = json.loads(response_body)
         except json.JSONDecodeError as error:
-            raise VLMServiceError(
-                "VLM server returned invalid JSON"
-            ) from error
+            raise VLMServiceError("VLM server returned invalid JSON") from error
 
         return self._extract_content(response_payload)
 
     def _encode_image(self, image_path: Path) -> str:
         if not image_path.is_file():
-            raise FileNotFoundError(
-                f"Image does not exist: {image_path}"
-            )
+            raise FileNotFoundError(f"Image does not exist: {image_path}")
 
         image_bytes = image_path.read_bytes()
 
         if len(image_bytes) > self.max_image_bytes:
-            raise ValueError(
-                f"Image exceeds {self.max_image_bytes} byte limit"
-            )
+            raise ValueError(f"Image exceeds {self.max_image_bytes} byte limit")
 
         media_type, _ = mimetypes.guess_type(image_path.name)
 
         if media_type is None or not media_type.startswith("image/"):
-            raise ValueError(
-                f"Unsupported image type: {image_path.suffix}"
-            )
+            raise ValueError(f"Unsupported image type: {image_path.suffix}")
 
         encoded = base64.b64encode(image_bytes).decode("ascii")
 
@@ -130,9 +124,7 @@ class OpenAICompatibleVLMClient:
     @staticmethod
     def _extract_content(payload: object) -> str:
         if not isinstance(payload, dict):
-            raise VLMServiceError(
-                "VLM response must be a JSON object"
-            )
+            raise VLMServiceError("VLM response must be a JSON object")
 
         try:
             choices = payload["choices"]
@@ -140,9 +132,7 @@ class OpenAICompatibleVLMClient:
             message = first_choice["message"]
             content = message["content"]
         except (KeyError, IndexError, TypeError) as error:
-            raise VLMServiceError(
-                "VLM response has no assistant content"
-            ) from error
+            raise VLMServiceError("VLM response has no assistant content") from error
 
         if isinstance(content, str):
             return content
@@ -159,6 +149,4 @@ class OpenAICompatibleVLMClient:
             if text_parts:
                 return "".join(text_parts)
 
-        raise VLMServiceError(
-            "Assistant content is not valid text"
-        )
+        raise VLMServiceError("Assistant content is not valid text")

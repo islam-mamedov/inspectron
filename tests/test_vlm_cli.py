@@ -12,10 +12,7 @@ from inspectron.vlm_cli import main
 
 
 class VLMSmokeTestCLITests(unittest.TestCase):
-    @patch(
-        "inspectron.vlm_cli."
-        "OpenAICompatibleVLMClient.generate"
-    )
+    @patch("inspectron.vlm_cli.OpenAICompatibleVLMClient.generate")
     def test_prints_structured_observation(
         self,
         mock_generate: object,

@@ -21,10 +21,7 @@ class EvaluationTests(unittest.TestCase):
         actions = [action.kind for action in result.action_trace]
         self.assertIn(ActionKind.INSPECT, actions)
 
-        findings = {
-            (finding.asset_id, finding.defect_type)
-            for finding in result.findings
-        }
+        findings = {(finding.asset_id, finding.defect_type) for finding in result.findings}
 
         self.assertEqual(
             findings,
