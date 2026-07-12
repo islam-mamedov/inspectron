@@ -15,7 +15,7 @@ from inspectron.site_safety import (
     find_consistency_violations,
     resolve_safe_action,
 )
-from inspectron.site_safety_vlm import (
+from inspectron.vlm import (
     SITE_SAFETY_RESPONSE_SCHEMA,
     SiteSafetyVLMPerception,
 )

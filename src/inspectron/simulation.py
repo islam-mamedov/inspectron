@@ -1,37 +1,48 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from inspectron.domain import CapturedFrame, DefectType, Observation
+from inspectron.domain import CapturedFrame
+from inspectron.site_safety import (
+    HazardType,
+    RecommendedAction,
+    SceneAssessment,
+    Traversability,
+)
 
 
 @dataclass(frozen=True, slots=True)
-class PerceptionPrediction:
-    defect_type: DefectType
-    confidence: float
-    view_quality: float
-
-
-@dataclass(frozen=True, slots=True)
-class InspectionScenario:
+class SafetyScenario:
     name: str
-    frames: dict[str, tuple[CapturedFrame, ...]]
-    predictions: dict[str, PerceptionPrediction]
-    ground_truth: dict[str, DefectType]
+    frames: dict[
+        str,
+        tuple[CapturedFrame, ...],
+    ]
+    assessments: dict[str, SceneAssessment]
     blocked_waypoints: frozenset[str] = frozenset()
+
+    def __post_init__(self) -> None:
+        if not self.frames:
+            raise ValueError("Scenario must contain waypoints")
+
+        if any(not frames for frames in self.frames.values()):
+            raise ValueError("Every waypoint needs a frame")
 
     @property
     def required_waypoints(self) -> tuple[str, ...]:
         return tuple(self.frames)
 
 
-class MockRobot:
-    """Deterministic replacement for a future ROS 2 robot adapter."""
-
-    def __init__(self, scenario: InspectionScenario) -> None:
+class MockSafetyRobot:
+    def __init__(
+        self,
+        scenario: SafetyScenario,
+    ) -> None:
         self.scenario = scenario
         self._current_waypoint = scenario.required_waypoints[0]
         self._view_indices: dict[str, int] = {}
+        self.motion_log: list[tuple[str, float]] = []
+        self.inspection_count = 0
         self.stopped = False
 
     @property
@@ -39,36 +50,61 @@ class MockRobot:
         return self._current_waypoint
 
     @property
-    def blocked_waypoints(self) -> frozenset[str]:
+    def blocked_waypoints(
+        self,
+    ) -> frozenset[str]:
         return self.scenario.blocked_waypoints
 
     def reset(self) -> CapturedFrame:
         self._current_waypoint = self.scenario.required_waypoints[0]
         self._view_indices = {self._current_waypoint: 0}
+        self.motion_log = []
+        self.inspection_count = 0
         self.stopped = False
+
         return self._current_frame()
 
-    def move(self, target: str) -> CapturedFrame:
+    def move(
+        self,
+        target: str,
+        *,
+        speed_scale: float,
+    ) -> CapturedFrame:
         self._ensure_running()
 
         if target not in self.scenario.frames:
             raise ValueError(f"Unknown waypoint: {target}")
 
         if target in self.blocked_waypoints:
-            raise RuntimeError(f"Cannot move to blocked waypoint: {target}")
+            raise RuntimeError(f"Blocked waypoint: {target}")
+
+        if not 0.0 < speed_scale <= 1.0:
+            raise ValueError("Invalid movement speed scale")
 
         self._current_waypoint = target
-        self._view_indices.setdefault(target, 0)
+        self._view_indices.setdefault(
+            target,
+            0,
+        )
+        self.motion_log.append((target, speed_scale))
 
         return self._current_frame()
 
     def inspect(self) -> CapturedFrame:
         self._ensure_running()
 
-        available_frames = self.scenario.frames[self._current_waypoint]
+        frames = self.scenario.frames[self._current_waypoint]
+
         current_index = self._view_indices[self._current_waypoint]
-        next_index = min(current_index + 1, len(available_frames) - 1)
+
+        next_index = min(
+            current_index + 1,
+            len(frames) - 1,
+        )
+
         self._view_indices[self._current_waypoint] = next_index
+
+        self.inspection_count += 1
 
         return self._current_frame()
 
@@ -77,6 +113,7 @@ class MockRobot:
 
     def _current_frame(self) -> CapturedFrame:
         index = self._view_indices[self._current_waypoint]
+
         return self.scenario.frames[self._current_waypoint][index]
 
     def _ensure_running(self) -> None:
@@ -84,88 +121,106 @@ class MockRobot:
             raise RuntimeError("Robot has been stopped")
 
 
-class MockPerception:
-    """Maps captured frames to planted predictions."""
+class MockSafetyPerception:
+    def __init__(
+        self,
+        assessments: dict[
+            str,
+            SceneAssessment,
+        ],
+    ) -> None:
+        self.assessments = assessments
+        self.analysis_log: list[str] = []
 
-    def __init__(self, predictions: dict[str, PerceptionPrediction]) -> None:
-        self.predictions = predictions
-        self.analyzed_evidence_ids: list[str] = []
-
-    def analyze(self, frame: CapturedFrame) -> Observation:
+    def analyze(
+        self,
+        frame: CapturedFrame,
+    ) -> SceneAssessment:
         try:
-            prediction = self.predictions[frame.evidence_id]
+            template = self.assessments[frame.evidence_id]
         except KeyError as error:
-            raise ValueError(f"No prediction exists for evidence: {frame.evidence_id}") from error
+            raise ValueError(f"No assessment exists for {frame.evidence_id}") from error
 
-        self.analyzed_evidence_ids.append(frame.evidence_id)
+        self.analysis_log.append(frame.evidence_id)
 
-        return Observation(
+        return replace(
+            template,
             waypoint=frame.waypoint,
-            asset_id=frame.asset_id,
             evidence_id=frame.evidence_id,
-            predicted_defect=prediction.defect_type,
-            confidence=prediction.confidence,
-            view_quality=prediction.view_quality,
-            view_index=frame.view_index,
         )
 
 
-def baseline_scenario() -> InspectionScenario:
-    return InspectionScenario(
-        name="three_bay_baseline",
+def baseline_site_safety_scenario(
+    *,
+    name: str = "warehouse_baseline",
+) -> SafetyScenario:
+    return SafetyScenario(
+        name=name,
         frames={
-            "bay_a": (
+            "aisle_a": (
                 CapturedFrame(
-                    waypoint="bay_a",
-                    asset_id="column_a",
-                    evidence_id="image_a_0",
+                    waypoint="aisle_a",
+                    asset_id="scene_a",
+                    evidence_id="aisle_a_0",
                 ),
             ),
-            "bay_b": (
+            "aisle_b": (
                 CapturedFrame(
-                    waypoint="bay_b",
-                    asset_id="column_b",
-                    evidence_id="image_b_0",
+                    waypoint="aisle_b",
+                    asset_id="scene_b",
+                    evidence_id="aisle_b_0",
                 ),
             ),
-            "bay_c": (
+            "aisle_c": (
                 CapturedFrame(
-                    waypoint="bay_c",
-                    asset_id="column_c",
-                    evidence_id="image_c_0",
+                    waypoint="aisle_c",
+                    asset_id="scene_c",
+                    evidence_id="aisle_c_0",
                 ),
                 CapturedFrame(
-                    waypoint="bay_c",
-                    asset_id="column_c",
-                    evidence_id="image_c_1",
+                    waypoint="aisle_c",
+                    asset_id="scene_c",
+                    evidence_id="aisle_c_1",
                     view_index=1,
                 ),
             ),
         },
-        predictions={
-            "image_a_0": PerceptionPrediction(
-                defect_type=DefectType.CRACK,
-                confidence=0.94,
-                view_quality=0.91,
+        assessments={
+            "aisle_a_0": SceneAssessment(
+                waypoint="aisle_a",
+                evidence_id="aisle_a_0",
+                traversability=(Traversability.CLEAR),
+                hazards=frozenset(),
+                recommended_action=(RecommendedAction.PROCEED),
+                confidence=0.96,
+                view_quality=0.92,
             ),
-            "image_b_0": PerceptionPrediction(
-                defect_type=DefectType.NONE,
-                confidence=0.97,
-                view_quality=0.88,
-            ),
-            "image_c_0": PerceptionPrediction(
-                defect_type=DefectType.CORROSION,
-                confidence=0.58,
-                view_quality=0.44,
-            ),
-            "image_c_1": PerceptionPrediction(
-                defect_type=DefectType.CORROSION,
+            "aisle_b_0": SceneAssessment(
+                waypoint="aisle_b",
+                evidence_id="aisle_b_0",
+                traversability=(Traversability.RESTRICTED),
+                hazards=frozenset({HazardType.DEBRIS}),
+                recommended_action=(RecommendedAction.SLOW_DOWN),
                 confidence=0.91,
                 view_quality=0.86,
             ),
-        },
-        ground_truth={
-            "column_a": DefectType.CRACK,
-            "column_c": DefectType.CORROSION,
+            "aisle_c_0": SceneAssessment(
+                waypoint="aisle_c",
+                evidence_id="aisle_c_0",
+                traversability=(Traversability.UNKNOWN),
+                hazards=frozenset(),
+                recommended_action=(RecommendedAction.INSPECT_CLOSER),
+                confidence=0.45,
+                view_quality=0.40,
+            ),
+            "aisle_c_1": SceneAssessment(
+                waypoint="aisle_c",
+                evidence_id="aisle_c_1",
+                traversability=(Traversability.CLEAR),
+                hazards=frozenset(),
+                recommended_action=(RecommendedAction.PROCEED),
+                confidence=0.93,
+                view_quality=0.89,
+            ),
         },
     )
