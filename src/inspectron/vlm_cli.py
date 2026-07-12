@@ -11,67 +11,74 @@ from inspectron.clients.openai_compatible import (
     OpenAICompatibleVLMClient,
 )
 from inspectron.domain import CapturedFrame
-from inspectron.vlm import VLMPerception
+from inspectron.site_safety import (
+    find_consistency_violations,
+    resolve_safe_action,
+)
+from inspectron.site_safety_vlm import (
+    SITE_SAFETY_RESPONSE_SCHEMA,
+    SiteSafetyVLMPerception,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run Inspectron VLM perception on one image.",
+        description=("Run an embodied site-safety assessment on one image."),
     )
 
     parser.add_argument(
         "--image",
         type=Path,
         required=True,
-        help="Path to a structural inspection image.",
+    )
+    parser.add_argument(
+        "--provider",
+        choices=("ollama", "openai"),
+        default=os.getenv(
+            "INSPECTRON_VLM_PROVIDER",
+            "ollama",
+        ),
     )
     parser.add_argument(
         "--base-url",
-        default=os.getenv("INSPECTRON_VLM_BASE_URL"),
-        help=("OpenAI-compatible server URL. Alternatively set INSPECTRON_VLM_BASE_URL."),
+        default=os.getenv(
+            "INSPECTRON_VLM_BASE_URL",
+            "http://localhost:11434",
+        ),
     )
     parser.add_argument(
         "--model",
-        default=os.getenv("INSPECTRON_VLM_MODEL"),
-        help=("Model name exposed by the server. Alternatively set INSPECTRON_VLM_MODEL."),
+        default=os.getenv(
+            "INSPECTRON_VLM_MODEL",
+            "qwen3-vl:8b",
+        ),
     )
     parser.add_argument(
         "--waypoint",
-        default="manual_inspection",
+        default="manual_site_inspection",
     )
     parser.add_argument(
-        "--asset-id",
-        default="unknown_asset",
+        "--scene-id",
+        default="unknown_scene",
     )
     parser.add_argument(
         "--evidence-id",
-        default="manual_image_0",
-    )
-
-    parser.add_argument(
-        "--provider",
-        choices=("openai", "ollama"),
-        default="openai",
-        help="Inference API provider.",
+        default="manual_frame_0",
     )
 
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    parser = build_parser()
-    arguments = parser.parse_args(argv)
-
-    if not arguments.base_url:
-        parser.error("--base-url or INSPECTRON_VLM_BASE_URL is required")
-
-    if not arguments.model:
-        parser.error("--model or INSPECTRON_VLM_MODEL is required")
+def main(
+    argv: Sequence[str] | None = None,
+) -> None:
+    arguments = build_parser().parse_args(argv)
 
     if arguments.provider == "ollama":
         client = OllamaVLMClient(
             base_url=arguments.base_url,
             model=arguments.model,
+            response_schema=SITE_SAFETY_RESPONSE_SCHEMA,
         )
     else:
         client = OpenAICompatibleVLMClient(
@@ -80,25 +87,32 @@ def main(argv: Sequence[str] | None = None) -> None:
             api_key=os.getenv("INSPECTRON_VLM_API_KEY"),
         )
 
-    perception = VLMPerception(client)
+    perception = SiteSafetyVLMPerception(client)
 
     frame = CapturedFrame(
         waypoint=arguments.waypoint,
-        asset_id=arguments.asset_id,
+        asset_id=arguments.scene_id,
         evidence_id=arguments.evidence_id,
         image_path=str(arguments.image),
     )
 
-    observation = perception.analyze(frame)
+    assessment = perception.analyze(frame)
+    enforced_action = resolve_safe_action(assessment)
+
+    violations = find_consistency_violations(assessment)
 
     output = {
-        "waypoint": observation.waypoint,
-        "asset_id": observation.asset_id,
-        "evidence_id": observation.evidence_id,
-        "defect_type": observation.predicted_defect.value,
-        "confidence": observation.confidence,
-        "view_quality": observation.view_quality,
-        "view_index": observation.view_index,
+        "waypoint": assessment.waypoint,
+        "scene_id": arguments.scene_id,
+        "evidence_id": assessment.evidence_id,
+        "traversability": (assessment.traversability.value),
+        "hazards": sorted(hazard.value for hazard in assessment.hazards),
+        "model_recommended_action": (assessment.recommended_action.value),
+        "enforced_action": enforced_action.value,
+        "policy_overrode_model": (enforced_action is not assessment.recommended_action),
+        "consistency_violations": list(violations),
+        "confidence": assessment.confidence,
+        "view_quality": assessment.view_quality,
     }
 
     print(json.dumps(output, indent=2))
