@@ -202,10 +202,8 @@ src/inspectron/
 - Robot execution is currently simulated.
 - The example benchmark does not ship with licensed images.
 - VLM confidence values are model-generated and are not yet calibrated.
-- Perception-service failures are not yet converted into mission-level emergency stops.
 - The rerouting policy selects another required waypoint but does not yet use a geometric path planner.
 - The system is a research prototype and is not safety-certified.
-- Perception-service failures are not yet converted into mission-level emergency stops.
 
 ## Roadmap
 

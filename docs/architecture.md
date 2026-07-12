@@ -11,6 +11,7 @@ The system combines:
 - deterministic safety reasoning;
 - closed-loop agent behavior;
 - robot-action validation;
+- fail-safe mission termination;
 - measurable safety evaluation.
 
 The central design rule is that learned model output is advisory. Deterministic components retain authority over robot movement.
@@ -34,7 +35,7 @@ Current outputs:
 - robot action trace;
 - safety-policy overrides;
 - mission coverage and termination status;
-
+- controlled runtime-failure information;
 - evaluation and latency metrics.
 
 Physical robot drivers, mapping, localization, and geometric path planning are outside the current implementation.
@@ -63,6 +64,10 @@ sequenceDiagram
         M->>R: Move, inspect, stop, or report
     else action rejected
         M->>R: Stop
+    end
+
+    opt runtime failure
+        M->>R: Attempt fail-safe stop
     end
 ```
 
@@ -109,11 +114,14 @@ It tracks:
 
 Agent behaviors include:
 
+- resetting state before every mission;
+- rejecting assessments outside the mission;
 - immediate stop for critical hazards;
 - another inspection for weak evidence;
 - stop after the maximum number of uncertain views;
 - reduced-speed movement through restricted scenes;
 - selection of another required waypoint after a blocked route;
+- stopping when a route is blocked and no alternative remains;
 - reporting only after required coverage.
 
 ### Mission orchestrator
@@ -121,7 +129,7 @@ Agent behaviors include:
 `mission.py` implements the closed-loop mission:
 
 ```text
-capture → perceive → observe → decide → validate → execute → repeat
+capture → perceive → validate metadata → observe → decide → validate action → execute → repeat
 ```
 
 The mission terminates with one of:
@@ -129,9 +137,12 @@ The mission terminates with one of:
 - `completed`
 - `safety_stop`
 - `validation_failure`
+- `runtime_failure`
 - `step_limit`
 
-Robot and perception implementations are injected through protocols, keeping the mission logic independent of Ollama, ROS 2, or the simulator.
+Robot and perception implementations are injected through protocols, keeping mission logic independent of Ollama, ROS 2, or the simulator.
+
+The mission validates that the waypoint and evidence identifiers returned by perception match the captured frame. This prevents a faulty perception adapter from claiming that the robot assessed a location it never visited.
 
 ### Execution safety gate
 
@@ -140,6 +151,7 @@ Robot and perception implementations are injected through protocols, keeping the
 It enforces these invariants:
 
 - movement requires a target;
+- movement requires an explicit validated speed scale;
 - movement targets must belong to the mission;
 - blocked waypoints cannot be entered;
 - inspection can occur only at the current waypoint;
@@ -158,6 +170,16 @@ The baseline warehouse scenario exercises:
 - reduced-speed travel around debris;
 - uncertainty-driven reinspection;
 - successful mission completion.
+
+Regression scenarios additionally verify:
+
+- immediate stop for critical hazards;
+- stop when no reroute remains;
+- controlled handling of initial perception failures;
+- controlled handling of failures after robot movement;
+- rejection of mismatched perception metadata;
+- rejection of movement without a target or speed;
+- clean agent state when an agent is reused.
 
 Simulation provides repeatable integration tests without requiring robot hardware.
 
@@ -224,7 +246,16 @@ Policy recommendations are converted into robot actions:
 | `reroute` | Select another required waypoint at speed scale `0.50` |
 | `stop` | Stop the mission |
 
+Every MOVE action must contain both:
+
+- a target waypoint;
+- an explicit speed scale between `0` and `1`.
+
+A missing speed is never converted to full speed.
+
 The present rerouting behavior is waypoint-based. A future navigation adapter will delegate geometric route selection to a robot navigation stack.
+
+If the current route is blocked and no unvisited waypoint remains, the agent stops instead of incorrectly reporting successful completion.
 
 ## 9. Evaluation
 
@@ -242,7 +273,7 @@ Reported metrics include:
 - mean inference latency;
 - per-sample errors.
 
-Unsafe motion is counted when the expected action is `stop` or `reroute`, but the evaluated action would permit forward motion.
+Unsafe motion is currently counted when the expected action is `stop` or `reroute`, but the evaluated action would permit forward motion.
 
 The most important comparison is:
 
@@ -250,7 +281,9 @@ The most important comparison is:
 model unsafe motion count → enforced unsafe motion count
 ```
 
-This directly measures whether the deterministic layer reduces unsafe decisions.
+This measures whether the deterministic layer reduces unsafe model decisions.
+
+Support for treating an incorrect movement recommendation during `inspect_closer` as unsafe motion is part of the next evaluation-hardening milestone.
 
 ## 10. Failure Handling
 
@@ -265,12 +298,40 @@ Implemented validation includes:
 - missing schema fields;
 - unsupported labels;
 - invalid confidence ranges;
+- mismatched frame and assessment metadata;
 - illegal robot actions;
+- movement without an explicit speed;
 - incomplete mission coverage.
 
-A remaining improvement is mission-level fail-safe handling for perception-service exceptions. The intended behavior is to stop the robot, record the error, and return a controlled failure status.
+The mission runner converts unexpected exceptions into a controlled `runtime_failure` result. The result includes a `failure_reason` containing the exception type and message.
 
-## 11. Proposed ROS 2 Boundary
+The robot stop operation is attempted from a `finally` block on every mission termination path, including:
+
+- successful completion;
+- a safety-policy stop;
+- an action-validation failure;
+- a perception failure;
+- a robot-adapter failure;
+- reaching the mission step limit.
+
+If the stop operation also fails, its error is appended to `failure_reason`, and the mission remains in the `runtime_failure` state.
+
+## 11. Mission State Isolation
+
+A `SiteSafetyAgent` may be reused, but state from one mission must never influence another.
+
+Before every mission, the orchestrator resets:
+
+- visited waypoints;
+- captured-view counts;
+- assessment history;
+- policy override count.
+
+This prevents a second mission from incorrectly reporting completion based on waypoints visited during an earlier run.
+
+Mission results copy their assessment and waypoint collections so later agent resets do not mutate historical results.
+
+## 12. Proposed ROS 2 Boundary
 
 The Python system should retain:
 
@@ -291,7 +352,7 @@ A future ROS 2 integration should provide adapters for:
 
 The mission orchestrator can continue using the existing protocols while concrete ROS 2 adapters replace the simulated components.
 
-## 12. Planned C++ Component
+## 13. Planned C++ Component
 
 C++ is not required for the current VLM prototype.
 
@@ -306,7 +367,7 @@ The best future C++ component is the final ROS 2 safety supervisor because it si
 
 The VLM and experimental agent logic should remain in Python unless profiling demonstrates a concrete performance requirement.
 
-## 13. Trust Boundaries
+## 14. Trust Boundaries
 
 The components have different authority levels:
 
@@ -320,7 +381,9 @@ Robot controller      → executes only approved actions
 
 No unvalidated VLM output crosses directly into the robot-control interface.
 
-## 14. Current Non-Goals
+Runtime errors also cannot silently bypass mission termination: the orchestrator records the failure and attempts to stop the robot.
+
+## 15. Current Non-Goals
 
 The current version does not claim:
 
