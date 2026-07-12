@@ -54,6 +54,11 @@ class Action:
     kind: ActionKind
     target: str | None = None
     reason: str = ""
+    speed_scale: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.speed_scale is not None and not 0.0 < self.speed_scale <= 1.0:
+            raise ValueError("speed_scale must be greater than 0 and no greater than 1")
 
 
 @dataclass(frozen=True, slots=True)
