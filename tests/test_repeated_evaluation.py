@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from inspectron.domain import CapturedFrame
 from inspectron.repeated_evaluation import build_repeated_report
@@ -17,6 +18,7 @@ from inspectron.vlm_eval_cli import (
     SafetyEvaluationSample,
     build_parser,
     evaluate_repeated_samples,
+    main,
 )
 
 DEFAULT_METRICS: dict[str, float | int] = {
@@ -424,6 +426,83 @@ class RepeatedEvaluationTests(unittest.TestCase):
             self.assertEqual(summary["mean"], summary["max"])
 
         json.dumps(report, allow_nan=False)
+
+    def test_cli_writes_repeated_report_and_exits_nonzero_when_all_runs_fail(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "manifest.json"
+            output = root / "report.json"
+
+            manifest.write_text(
+                json.dumps(
+                    [
+                        {
+                            "id": "missing_clear_scene",
+                            "image": "missing.jpg",
+                            "traversability": "clear",
+                            "hazards": [],
+                            "expected_action": "proceed",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            stdout = StringIO()
+
+            with redirect_stdout(stdout):
+                with self.assertRaises(SystemExit) as raised:
+                    main(
+                        [
+                            "--manifest",
+                            str(manifest),
+                            "--data-root",
+                            str(root),
+                            "--runs",
+                            "2",
+                            "--output",
+                            str(output),
+                        ]
+                    )
+
+            self.assertNotEqual(raised.exception.code, 0)
+            self.assertTrue(output.is_file())
+
+            report = json.loads(
+                output.read_text(encoding="utf-8"),
+                parse_constant=self.fail,
+            )
+
+            self.assertEqual(report["run_count"], 2)
+            self.assertEqual(report["sample_count"], 1)
+            self.assertEqual(report["total_evaluations"], 2)
+            self.assertEqual(report["successful_count"], 0)
+            self.assertEqual(report["error_count"], 2)
+            self.assertEqual(report["mean_prediction_agreement"], 1.0)
+            self.assertEqual(report["fully_stable_scene_count"], 1)
+            self.assertIn("metric_summary", report)
+            self.assertIn("manifest_sha256", report)
+            self.assertIn("generated_at_utc", report)
+            self.assertEqual(
+                [run["run_index"] for run in report["runs"]],
+                [1, 2],
+            )
+
+            scene = report["scene_prediction_agreement"][0]
+
+            self.assertEqual(scene["successful_count"], 0)
+            self.assertTrue(scene["prediction_variants"][0]["failed"])
+
+            summary = json.loads(
+                stdout.getvalue(),
+                parse_constant=self.fail,
+            )
+
+            self.assertEqual(summary["run_count"], 2)
+            self.assertEqual(summary["successful_count"], 0)
+            self.assertIn("metric_summary", summary)
 
     def test_rejects_empty_run_collection(self) -> None:
         with self.assertRaisesRegex(
