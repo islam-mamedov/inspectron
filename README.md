@@ -162,6 +162,8 @@ The evaluation report measures:
 - traversability accuracy;
 - exact multi-label hazard match;
 - hazard micro precision, recall, and F1;
+- per-hazard support, counts, precision, recall, and F1 for every hazard class;
+- a traversability confusion matrix with an explicit error column for failed inference;
 - model action accuracy;
 - safety-enforced action accuracy;
 - policy override rate;
