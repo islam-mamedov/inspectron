@@ -169,7 +169,7 @@ The evaluation report measures:
 - mean inference latency;
 - parsing and inference failures.
 
-The example manifest defines the expected format but does not include benchmark images.
+The example manifest defines the expected format but does not include benchmark images. Failed samples never receive exact-match credit. If every sample fails, the evaluator still writes a diagnostic report and exits with a nonzero status.
 
 ## Testing
 

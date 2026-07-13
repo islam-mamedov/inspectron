@@ -146,6 +146,9 @@ def evaluate_samples(
     model_name: str,
     clock: Callable[[], float] = perf_counter,
 ) -> dict[str, object]:
+    if not samples:
+        raise ValueError("At least one evaluation sample is required")
+
     results: list[dict[str, object]] = []
     latencies: list[float] = []
 
@@ -161,7 +164,7 @@ def evaluate_samples(
 
         try:
             assessment = perception.analyze(frame)
-        except Exception as error:
+        except (OSError, RuntimeError, ValueError) as error:
             latency = clock() - started_at
             latencies.append(latency)
 
@@ -229,7 +232,7 @@ def _error_result(
         "model_action": None,
         "enforced_action": None,
         "traversability_correct": False,
-        "hazards_exact": not sample.hazards,
+        "hazards_exact": False,
         "model_action_correct": False,
         "enforced_action_correct": False,
         "policy_overrode_model": False,
@@ -303,11 +306,23 @@ def _build_report(
 def _hazard_metrics(
     results: Sequence[dict[str, object]],
 ) -> dict[str, float | int]:
+    successful_results = [result for result in results if result["error"] is None]
+
+    if not successful_results:
+        return {
+            "true_positives": 0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+        }
+
     true_positives = 0
     false_positives = 0
     false_negatives = 0
 
-    for result in results:
+    for result in successful_results:
         expected = set(result["expected_hazards"])
         predicted = set(result["predicted_hazards"])
 
@@ -346,6 +361,7 @@ def _unsafe_motion_count(
     must_not_move = {
         RecommendedAction.STOP.value,
         RecommendedAction.REROUTE.value,
+        RecommendedAction.INSPECT_CLOSER.value,
     }
 
     permits_motion = {
@@ -448,6 +464,9 @@ def main(
     summary["output"] = str(arguments.output)
 
     print(json.dumps(summary, indent=2))
+
+    if report["successful_count"] == 0:
+        raise SystemExit("Evaluation failed: no samples completed successfully")
 
 
 if __name__ == "__main__":
