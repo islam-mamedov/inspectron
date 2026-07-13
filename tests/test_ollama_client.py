@@ -89,6 +89,29 @@ class OllamaVLMClientTests(unittest.TestCase):
         )
 
     @patch("inspectron.clients.ollama.urlopen")
+    def test_rejects_oversized_image_without_network(
+        self,
+        mock_urlopen: object,
+    ) -> None:
+        client = OllamaVLMClient(
+            base_url="http://localhost:11434",
+            model="qwen3-vl:8b",
+            max_image_bytes=8,
+        )
+
+        with TemporaryDirectory() as directory:
+            image_path = Path(directory) / "aisle.jpg"
+            image_path.write_bytes(b"larger-than-eight-bytes")
+
+            with self.assertRaisesRegex(ValueError, "byte limit"):
+                client.generate(
+                    image_path=image_path,
+                    prompt="Assess this aisle",
+                )
+
+        mock_urlopen.assert_not_called()
+
+    @patch("inspectron.clients.ollama.urlopen")
     def test_rejects_empty_content(
         self,
         mock_urlopen: object,

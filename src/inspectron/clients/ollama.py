@@ -21,7 +21,7 @@ class OllamaVLMClient:
         base_url: str,
         model: str,
         timeout_seconds: float = 180.0,
-        max_image_bytes: int = 10 * 1024 * 1024,
+        max_image_bytes: int = 25 * 1024 * 1024,
         response_schema: dict[str, object] | str = "json",
     ) -> None:
         if not base_url.startswith(("http://", "https://")):
