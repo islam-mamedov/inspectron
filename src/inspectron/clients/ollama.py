@@ -22,6 +22,7 @@ class OllamaVLMClient:
         model: str,
         timeout_seconds: float = 180.0,
         max_image_bytes: int = 25 * 1024 * 1024,
+        num_ctx: int = 16384,
         response_schema: dict[str, object] | str = "json",
     ) -> None:
         if not base_url.startswith(("http://", "https://")):
@@ -30,10 +31,14 @@ class OllamaVLMClient:
         if not model.strip():
             raise ValueError("model cannot be empty")
 
+        if num_ctx <= 0:
+            raise ValueError("num_ctx must be positive")
+
         self.endpoint = f"{base_url.rstrip('/')}/api/chat"
         self.model = model
         self.timeout_seconds = timeout_seconds
         self.max_image_bytes = max_image_bytes
+        self.num_ctx = num_ctx
 
         if not isinstance(response_schema, (dict, str)):
             raise TypeError("response_schema must be a dictionary or the string 'json'")
@@ -56,6 +61,7 @@ class OllamaVLMClient:
             "options": {
                 "temperature": 0,
                 "num_predict": 2048,
+                "num_ctx": self.num_ctx,
             },
             "messages": [
                 {
