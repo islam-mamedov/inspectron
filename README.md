@@ -157,6 +157,11 @@ PYTHONPATH=src python3 -m inspectron.vlm_eval_cli \
   --output artifacts/metrics/site_safety_smoke.json
 ```
 
+Use `--runs 3` to evaluate the same ordered samples sequentially. A single
+run preserves the original report schema. Repeated reports retain every run,
+summarize each aggregate metric with its mean, population standard deviation,
+minimum, and maximum, and measure scene-level prediction agreement.
+
 The evaluation report measures:
 
 - traversability accuracy;
@@ -181,20 +186,36 @@ A provenance-validated pilot was run on seven original-resolution images: one cl
 
 | Metric | Result |
 |---|---:|
-| Successful inference | 7/7 |
+| Successful inference | 21/21 across 3 runs |
 | Traversability accuracy | 85.7% |
 | Hazard exact match | 85.7% |
 | Hazard micro F1 | 90.9% |
 | Model action accuracy | 85.7% |
 | Safety-enforced action accuracy | 85.7% |
 | Unsafe-motion decisions | 0 |
-| Mean on-device latency | 53.32 seconds/image |
+| Mean prediction agreement | 100.0% |
+| Fully stable scenes | 7/7 |
+| Mean on-device latency | 31.77 seconds/image |
+| Run-mean latency population std. | 13.39 seconds |
 
-The model correctly handled six scenes. On `unstable_load_001`, it classified the route as blocked but omitted the critical `unstable_load` hazard, producing `reroute` instead of the expected `stop`. The deterministic policy could not repair the miss because the predicted assessment was internally consistent. This illustrates the system boundary: enforcement can constrain recognized hazards but cannot recover a hazard omitted by perception.
+All seven scenes produced the same joint prediction in all three runs. The model
+correctly handled six scenes. On `unstable_load_001`, it consistently classified
+the route as blocked but omitted the critical `unstable_load` hazard, producing
+`reroute` instead of the expected `stop` at confidence `1.0`. The deterministic
+policy could not repair the miss because the predicted assessment was internally
+consistent. This illustrates the system boundary: enforcement can constrain
+recognized hazards but cannot recover a hazard omitted by perception.
+
+Output stability did not imply latency stability. The first run averaged 50.71
+seconds/image, while the two warm runs averaged 22.36 and 22.24 seconds/image.
+This pilot therefore separates deterministic prediction behavior from a substantial
+cold-start or warm-cache runtime effect.
 
 These results are preliminary because the pilot contains only one image per scene group. Labels were finalized before inference and were not changed after results were observed.
 
-See the [full analysis](docs/results/site_safety_pilot_7.md) and [machine-readable report](docs/results/site_safety_pilot_7.json).
+See the [full analysis](docs/results/site_safety_pilot_7.md), the
+[single-run report](docs/results/site_safety_pilot_7.json), and the
+[three-run machine-readable report](docs/results/site_safety_pilot_7_repeated_3.json).
 
 ## Testing
 
@@ -214,6 +235,7 @@ src/inspectron/
 ├── safety.py                # Final robot-action validation
 ├── site_safety.py           # Scene schema and deterministic policy
 ├── simulation.py            # Deterministic robot and perception adapters
+├── repeated_evaluation.py   # Repeated-run statistics and agreement
 ├── vlm.py                   # VLM prompt, schema, and output parser
 ├── vlm_cli.py               # Single-image inference CLI
 ├── vlm_eval_cli.py          # Batch safety evaluation
@@ -233,8 +255,8 @@ src/inspectron/
 
 ## Roadmap
 
-- Scale the licensed real-image benchmark from 7 to 42 images and add per-class metrics
-- Add confidence calibration and repeated-run evaluation
+- Scale the licensed real-image benchmark from 7 to 42 images
+- Add confidence calibration and run repeated evaluation on the 42-image benchmark
 - Integrate ROS 2 robot and camera adapters
 - Add Gazebo or Isaac Sim scenarios
 - Move the final safety supervisor into a C++ ROS 2 node

@@ -266,6 +266,8 @@ Reported metrics include:
 - traversability accuracy;
 - exact hazard-set match;
 - hazard micro precision, recall, and F1;
+- per-hazard support, precision, recall, and F1;
+- a traversability confusion matrix with an explicit inference-error column;
 - model action accuracy;
 - enforced action accuracy;
 - policy override count and rate;
@@ -281,7 +283,24 @@ The most important comparison is:
 model unsafe motion count → enforced unsafe motion count
 ```
 
-This measures whether the deterministic layer reduces unsafe model decisions. Failed samples receive no exact-match credit and are excluded from hazard micro-metric calculations. If every sample fails, the evaluator writes the diagnostic report and exits with a nonzero status instead of producing a false-green result.
+This measures whether the deterministic layer reduces unsafe model decisions. Failed
+samples receive no exact-match credit. When at least one sample succeeds, expected
+hazards on failed samples remain in the micro-recall denominator as false negatives.
+If every sample fails, the evaluator writes a diagnostic report, reports zeroed micro
+metrics, and exits with a nonzero status instead of producing a false-green result.
+
+Repeated evaluation runs the same ordered sample set sequentially through the same
+stateless perception adapter. With `--runs N`, where `N > 1`, the report includes:
+
+- each complete per-run report;
+- mean, population standard deviation, minimum, and maximum for aggregate metrics;
+- a joint prediction signature for each scene, covering traversability, the sorted
+  hazard set, the model action, the enforced action, and inference-failure status;
+- modal agreement rate and the number of fully stable scenes.
+
+Raw exception messages are retained in individual run reports but excluded from the
+agreement signature, so changing transport error text does not create false model
+disagreement. `--runs 1` preserves the original single-run report schema.
 
 ## 10. Failure Handling
 
