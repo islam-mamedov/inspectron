@@ -77,7 +77,7 @@ Create an environment and install the package:
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e ".[dev]"
 ```
 
 Run the deterministic simulated mission:
