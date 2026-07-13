@@ -24,6 +24,10 @@ reviewing the results.
 | Manifest SHA-256 | `f3692b8bab4072cc5bd439e51d22e50861a99dbc278829a30ac04919892987a8` |
 | Run timestamp | 2026-07-13T13:51:50+00:00 |
 
+The pilot was subsequently repeated three times over the same ordered samples. The
+repeated evaluation was generated at `2026-07-13T17:22:20+00:00` with the same model,
+manifest, runtime configuration, and source images.
+
 ## Aggregate Results
 
 | Metric | Result |
@@ -40,6 +44,30 @@ reviewing the results.
 | Model unsafe-motion decisions | 0 |
 | Enforced unsafe-motion decisions | 0 |
 | Mean on-device latency | 53.32 seconds/image |
+
+## Three-Run Stability Results
+
+| Metric | Mean | Population std. | Minimum | Maximum |
+|---|---:|---:|---:|---:|
+| Traversability accuracy | 85.7% | 0.0% | 85.7% | 85.7% |
+| Hazard exact match | 85.7% | 0.0% | 85.7% | 85.7% |
+| Hazard micro precision | 100.0% | 0.0% | 100.0% | 100.0% |
+| Hazard micro recall | 83.3% | 0.0% | 83.3% | 83.3% |
+| Hazard micro F1 | 90.9% | 0.0% | 90.9% | 90.9% |
+| Model action accuracy | 85.7% | 0.0% | 85.7% | 85.7% |
+| Enforced action accuracy | 85.7% | 0.0% | 85.7% | 85.7% |
+| Model unsafe-motion count | 0 | 0 | 0 | 0 |
+| Enforced unsafe-motion count | 0 | 0 | 0 | 0 |
+| Mean latency (seconds/image) | 31.77 | 13.39 | 22.24 | 50.71 |
+
+All 21 inference calls completed successfully. Joint predictions were identical across
+all three runs for every scene: mean prediction agreement was `1.0`, and all seven
+scenes were fully stable. This establishes repeatability for this exact pilot and
+runtime configuration; it does not establish general model determinism.
+
+The per-run mean latencies were 50.71, 22.36, and 22.24 seconds/image. Predictions
+remained identical while latency improved sharply after the first pass, indicating a
+cold-start or warm-cache effect in the local inference path.
 
 ## Per-Scene Results
 
@@ -63,9 +91,10 @@ The decision was conservative and did not permit unsafe forward motion, but it s
 failed the expected action because rerouting near an unstable load is not equivalent
 to stopping.
 
-The model reported confidence `1.0` for this incorrect assessment. This demonstrates
-that model-generated confidence is not calibrated and motivates explicit calibration
-and repeated-run evaluation.
+The model reported confidence `1.0` for this incorrect assessment in all three runs.
+This demonstrates that model-generated confidence is not calibrated. Repetition
+confirmed the error was stable rather than exposing uncertainty, which strengthens
+the case for explicit calibration and a larger held-out benchmark.
 
 The deterministic safety policy did not override this result because the predicted
 assessment was internally consistent: a blocked path with no critical hazard maps to
@@ -86,7 +115,10 @@ The pilot verifies the complete reproducible pipeline:
 
 With only one example per scene group, these results are preliminary and must not be
 presented as statistically representative. The next benchmark milestone is six images
-per group, for 42 total images, followed by per-class metrics and repeated runs.
+per group, for 42 total images, followed by confidence calibration and repeated runs
+over the expanded set. Per-class metrics and repeated-run reporting are implemented.
 
 The complete machine-readable report is available in
-[`site_safety_pilot_7.json`](site_safety_pilot_7.json).
+[`site_safety_pilot_7.json`](site_safety_pilot_7.json). The complete three-run report
+is available in
+[`site_safety_pilot_7_repeated_3.json`](site_safety_pilot_7_repeated_3.json).

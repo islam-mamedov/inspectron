@@ -14,6 +14,7 @@ from typing import Protocol
 
 from inspectron.clients.ollama import OllamaVLMClient
 from inspectron.domain import CapturedFrame
+from inspectron.repeated_evaluation import build_repeated_report
 from inspectron.site_safety import (
     HazardType,
     RecommendedAction,
@@ -226,6 +227,41 @@ def evaluate_samples(
         model_name=model_name,
         results=results,
         latencies=latencies,
+    )
+
+
+def evaluate_repeated_samples(
+    *,
+    samples: Sequence[SafetyEvaluationSample],
+    data_root: Path,
+    perception: SafetyPerception,
+    model_name: str,
+    run_count: int,
+    clock: Callable[[], float] = perf_counter,
+) -> dict[str, object]:
+    if isinstance(run_count, bool) or not isinstance(run_count, int):
+        raise ValueError("Run count must be an integer")
+
+    if run_count < 1:
+        raise ValueError("Run count must be at least 1")
+
+    run_reports = [
+        evaluate_samples(
+            samples=samples,
+            data_root=data_root,
+            perception=perception,
+            model_name=model_name,
+            clock=clock,
+        )
+        for _ in range(run_count)
+    ]
+
+    if run_count == 1:
+        return run_reports[0]
+
+    return build_repeated_report(
+        model_name=model_name,
+        run_reports=run_reports,
     )
 
 
@@ -502,6 +538,18 @@ def _run_metadata(
     }
 
 
+def _positive_run_count(value: str) -> int:
+    try:
+        run_count = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("runs must be an integer") from error
+
+    if run_count < 1:
+        raise argparse.ArgumentTypeError("runs must be at least 1")
+
+    return run_count
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=("Evaluate embodied VLM site-safety assessments."),
@@ -532,6 +580,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--runs",
+        type=_positive_run_count,
+        default=1,
+        help=("Number of sequential evaluations over the same ordered sample set."),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path("artifacts/metrics/site_safety_smoke.json"),
@@ -554,11 +608,12 @@ def main(
 
     perception = SiteSafetyVLMPerception(client)
 
-    report = evaluate_samples(
+    report = evaluate_repeated_samples(
         samples=samples,
         data_root=arguments.data_root,
         perception=perception,
         model_name=arguments.model,
+        run_count=arguments.runs,
     )
 
     report = {
@@ -575,30 +630,53 @@ def main(
     )
 
     arguments.output.write_text(
-        json.dumps(report, indent=2),
+        json.dumps(
+            report,
+            indent=2,
+            allow_nan=False,
+        ),
         encoding="utf-8",
     )
 
-    summary_keys = (
-        "model",
-        "sample_count",
-        "successful_count",
-        "traversability_accuracy",
-        "hazard_exact_match",
-        "hazard_micro_f1",
-        "model_action_accuracy",
-        "enforced_action_accuracy",
-        "policy_override_rate",
-        "model_unsafe_motion_count",
-        "enforced_unsafe_motion_count",
-        "mean_latency_seconds",
-    )
+    if arguments.runs == 1:
+        summary_keys = (
+            "model",
+            "sample_count",
+            "successful_count",
+            "traversability_accuracy",
+            "hazard_exact_match",
+            "hazard_micro_f1",
+            "model_action_accuracy",
+            "enforced_action_accuracy",
+            "policy_override_rate",
+            "model_unsafe_motion_count",
+            "enforced_unsafe_motion_count",
+            "mean_latency_seconds",
+        )
+    else:
+        summary_keys = (
+            "model",
+            "run_count",
+            "sample_count",
+            "total_evaluations",
+            "successful_count",
+            "error_count",
+            "mean_prediction_agreement",
+            "fully_stable_scene_count",
+            "metric_summary",
+        )
 
     summary = {key: report[key] for key in summary_keys}
 
     summary["output"] = str(arguments.output)
 
-    print(json.dumps(summary, indent=2))
+    print(
+        json.dumps(
+            summary,
+            indent=2,
+            allow_nan=False,
+        )
+    )
 
     if report["successful_count"] == 0:
         raise SystemExit("Evaluation failed: no samples completed successfully")
