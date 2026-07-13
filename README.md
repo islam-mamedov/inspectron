@@ -173,6 +173,27 @@ The example manifest defines the expected format but does not include benchmark 
 
 The real-image benchmark — label taxonomy, licensing rules, provenance requirements, and the candidate review log — is documented in [benchmarks/DATASET.md](benchmarks/DATASET.md).
 
+### Seven-scene real-image pilot
+
+A provenance-validated pilot was run on seven original-resolution images: one clear scene and one example for each supported hazard class.
+
+| Metric | Result |
+|---|---:|
+| Successful inference | 7/7 |
+| Traversability accuracy | 85.7% |
+| Hazard exact match | 85.7% |
+| Hazard micro F1 | 90.9% |
+| Model action accuracy | 85.7% |
+| Safety-enforced action accuracy | 85.7% |
+| Unsafe-motion decisions | 0 |
+| Mean on-device latency | 53.32 seconds/image |
+
+The model correctly handled six scenes. On `unstable_load_001`, it classified the route as blocked but omitted the critical `unstable_load` hazard, producing `reroute` instead of the expected `stop`. The deterministic policy could not repair the miss because the predicted assessment was internally consistent. This illustrates the system boundary: enforcement can constrain recognized hazards but cannot recover a hazard omitted by perception.
+
+These results are preliminary because the pilot contains only one image per scene group. Labels were finalized before inference and were not changed after results were observed.
+
+See the [full analysis](docs/results/site_safety_pilot_7.md) and [machine-readable report](docs/results/site_safety_pilot_7.json).
+
 ## Testing
 
 ```bash
@@ -202,14 +223,15 @@ src/inspectron/
 ## Current Limitations
 
 - Robot execution is currently simulated.
-- The example benchmark does not ship with licensed images.
+- Third-party benchmark images are not committed; they are reconstructed from provenance-pinned download URLs and SHA-256 hashes.
+- The real-image benchmark currently contains only seven pilot images, so reported metrics are preliminary.
 - VLM confidence values are model-generated and are not yet calibrated.
 - The rerouting policy selects another required waypoint but does not yet use a geometric path planner.
 - The system is a research prototype and is not safety-certified.
 
 ## Roadmap
 
-- Build a properly licensed site-safety image benchmark
+- Scale the licensed real-image benchmark from 7 to 42 images and add per-class metrics
 - Add confidence calibration and repeated-run evaluation
 - Integrate ROS 2 robot and camera adapters
 - Add Gazebo or Isaac Sim scenarios
