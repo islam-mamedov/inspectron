@@ -5,12 +5,47 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "inspectron"
 version = "0.1.0"
-description = "Embodied VLM agent for structural inspection"
+description = "Embodied VLM agent for autonomous site-safety assessment"
+readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    { name = "Islam Mamedov" },
+]
+keywords = [
+    "agentic-ai",
+    "embodied-ai",
+    "robotics",
+    "site-safety",
+    "vision-language-model",
+    "vlm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2",
+    "ruff>=0.8",
+]
 
 [project.scripts]
 inspectron-demo = "inspectron.cli:main"
+inspectron-vlm = "inspectron.vlm_cli:main"
+inspectron-eval = "inspectron.vlm_eval_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/islam-mamedov/inspectron"
+Repository = "https://github.com/islam-mamedov/inspectron"
+Issues = "https://github.com/islam-mamedov/inspectron/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
