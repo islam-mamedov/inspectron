@@ -222,6 +222,105 @@ class DatasetDownloadTests(unittest.TestCase):
             ):
                 DOWNLOADER.load_download_records(manifest)
 
+    def test_rejects_symlink_escape_before_creating_directories(self) -> None:
+        expected_hash = hashlib.sha256(JPEG_BYTES).hexdigest()
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "manifest.json"
+            data_root = root / "data"
+            data_root.mkdir()
+
+            outside = root / "outside"
+            outside.mkdir()
+            (data_root / "clear").symlink_to(
+                outside,
+                target_is_directory=True,
+            )
+
+            _write_manifest(
+                manifest,
+                _record(expected_hash),
+            )
+
+            def opener(*args: Any, **kwargs: Any) -> Any:
+                raise AssertionError("Network must not be called")
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "outside data root",
+            ):
+                DOWNLOADER.download_manifest(
+                    manifest_path=manifest,
+                    data_root=data_root,
+                    opener=opener,
+                )
+
+            self.assertEqual(list(outside.iterdir()), [])
+
+    def test_redirect_handler_refuses_non_https_redirect(self) -> None:
+        handler = DOWNLOADER._HTTPSOnlyRedirectHandler()
+        request = DOWNLOADER.Request("https://example.org/image.jpg")
+
+        with self.assertRaisesRegex(ValueError, "non-HTTPS"):
+            handler.redirect_request(
+                request,
+                None,
+                302,
+                "Found",
+                {},
+                "http://example.org/image.jpg",
+            )
+
+    def test_redirect_handler_allows_https_redirect(self) -> None:
+        handler = DOWNLOADER._HTTPSOnlyRedirectHandler()
+        request = DOWNLOADER.Request("https://example.org/image.jpg")
+
+        redirected = handler.redirect_request(
+            request,
+            None,
+            302,
+            "Found",
+            {},
+            "https://cdn.example.org/image.jpg",
+        )
+
+        self.assertIsNotNone(redirected)
+        self.assertEqual(
+            redirected.full_url,
+            "https://cdn.example.org/image.jpg",
+        )
+
+    def test_rejects_response_that_ends_on_non_https_url(self) -> None:
+        expected_hash = hashlib.sha256(JPEG_BYTES).hexdigest()
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "manifest.json"
+            data_root = root / "data"
+
+            _write_manifest(
+                manifest,
+                _record(expected_hash),
+            )
+
+            response = FakeResponse(
+                data=JPEG_BYTES,
+                url="http://example.org/image.jpg",
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "HTTPS",
+            ):
+                DOWNLOADER.download_manifest(
+                    manifest_path=manifest,
+                    data_root=data_root,
+                    opener=lambda *args, **kwargs: response,
+                )
+
+            self.assertFalse((data_root / "clear" / "sample_001.jpg").exists())
+
     def test_rejects_non_image_response(self) -> None:
         expected_hash = hashlib.sha256(JPEG_BYTES).hexdigest()
 

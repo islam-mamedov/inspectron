@@ -41,6 +41,7 @@ def _sample(image_hash: str) -> dict[str, object]:
         "source_dataset": "Open Images",
         "source_id": "example-image-id",
         "source_page_url": "https://example.org/source-image",
+        "download_url": "https://example.org/source-image.jpg",
         "author": "Example Author",
         "license_name": "CC BY 2.0",
         "license_url": "https://creativecommons.org/licenses/by/2.0/",
@@ -55,7 +56,7 @@ class DatasetValidationTests(unittest.TestCase):
             data_root = root / "data"
             data_root.mkdir()
 
-            image_bytes = b"inspectron-real-image"
+            image_bytes = b"\xff\xd8\xff\xe0inspectron-real-image"
             image_path = data_root / "clear_001.jpg"
             image_path.write_bytes(image_bytes)
 
@@ -115,6 +116,67 @@ class DatasetValidationTests(unittest.TestCase):
                     manifest,
                     data_root=None,
                     verify_files=False,
+                )
+
+    def test_rejects_missing_download_url(self) -> None:
+        sample = _sample("0" * 64)
+        del sample["download_url"]
+
+        with TemporaryDirectory() as directory:
+            manifest = Path(directory) / "manifest.json"
+            manifest.write_text(
+                json.dumps([sample]),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "download_url"):
+                VALIDATOR.validate_manifest(
+                    manifest,
+                    data_root=None,
+                    verify_files=False,
+                )
+
+    def test_rejects_non_https_download_url(self) -> None:
+        sample = _sample("0" * 64)
+        sample["download_url"] = "http://example.org/source-image.jpg"
+
+        with TemporaryDirectory() as directory:
+            manifest = Path(directory) / "manifest.json"
+            manifest.write_text(
+                json.dumps([sample]),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "download_url must be an HTTPS URL",
+            ):
+                VALIDATOR.validate_manifest(
+                    manifest,
+                    data_root=None,
+                    verify_files=False,
+                )
+
+    def test_rejects_file_without_image_signature(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            data_root = root / "data"
+            data_root.mkdir()
+
+            file_bytes = b"plain text, not an image"
+            image_path = data_root / "clear_001.jpg"
+            image_path.write_bytes(file_bytes)
+
+            manifest = root / "manifest.json"
+            manifest.write_text(
+                json.dumps([_sample(hashlib.sha256(file_bytes).hexdigest())]),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "not a supported image"):
+                VALIDATOR.validate_manifest(
+                    manifest,
+                    data_root=data_root,
                 )
 
     def test_rejects_action_that_violates_policy(self) -> None:

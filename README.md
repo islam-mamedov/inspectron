@@ -169,7 +169,9 @@ The evaluation report measures:
 - mean inference latency;
 - parsing and inference failures.
 
-The example manifest defines the expected format but does not include benchmark images. Failed samples never receive exact-match credit. If every sample fails, the evaluator still writes a diagnostic report and exits with a nonzero status.
+The example manifest defines the expected format but does not include benchmark images. Failed samples never receive exact-match credit, and their expected hazards count as false negatives in the micro-averaged hazard metrics. Every report records reproducibility metadata: run timestamp, package version, manifest path, and manifest SHA-256. If every sample fails, the evaluator still writes a diagnostic report and exits with a nonzero status.
+
+The real-image benchmark — label taxonomy, licensing rules, provenance requirements, and the candidate review log — is documented in [benchmarks/DATASET.md](benchmarks/DATASET.md).
 
 ## Testing
 

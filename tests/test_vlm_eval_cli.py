@@ -144,6 +144,44 @@ class SafetyEvaluationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_manifest(manifest)
 
+    def test_manifest_rejects_duplicate_sample_ids(
+        self,
+    ) -> None:
+        from inspectron.vlm_eval_cli import (
+            load_manifest,
+        )
+
+        with TemporaryDirectory() as directory:
+            manifest = Path(directory) / "manifest.json"
+
+            manifest.write_text(
+                """
+                [
+                  {
+                    "id": "clear_1",
+                    "image": "clear_a.jpg",
+                    "traversability": "clear",
+                    "hazards": [],
+                    "expected_action": "proceed"
+                  },
+                  {
+                    "id": "clear_1",
+                    "image": "clear_b.jpg",
+                    "traversability": "clear",
+                    "hazards": [],
+                    "expected_action": "proceed"
+                  }
+                ]
+                """,
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "Duplicate sample id",
+            ):
+                load_manifest(manifest)
+
 
 if __name__ == "__main__":
     unittest.main()

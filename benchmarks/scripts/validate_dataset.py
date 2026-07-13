@@ -28,6 +28,7 @@ REQUIRED_FIELDS = frozenset(
         "source_dataset",
         "source_id",
         "source_page_url",
+        "download_url",
         "author",
         "license_name",
         "license_url",
@@ -111,6 +112,17 @@ def _sha256(path: Path) -> str:
             digest.update(chunk)
 
     return digest.hexdigest()
+
+
+def _is_supported_image(path: Path) -> bool:
+    with path.open("rb") as image_file:
+        header = image_file.read(12)
+
+    is_jpeg = header.startswith(b"\xff\xd8\xff")
+    is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
+    is_webp = len(header) >= 12 and header.startswith(b"RIFF") and header[8:12] == b"WEBP"
+
+    return is_jpeg or is_png or is_webp
 
 
 def _validate_labels(
@@ -197,6 +209,7 @@ def validate_manifest(
             "source_page_url",
             index,
         )
+        download_url = _required_string(item, "download_url", index)
         _required_string(item, "author", index)
         license_name = _required_string(item, "license_name", index)
         license_url = _required_string(item, "license_url", index)
@@ -209,6 +222,7 @@ def validate_manifest(
             raise ValueError(f"Manifest item {index} uses unsupported license {license_name!r}")
 
         _validate_https_url(source_page_url, "source_page_url", index)
+        _validate_https_url(download_url, "download_url", index)
         _validate_https_url(license_url, "license_url", index)
 
         if not SHA256_PATTERN.fullmatch(expected_hash):
@@ -252,6 +266,9 @@ def validate_manifest(
 
             if actual_hash != expected_hash:
                 raise ValueError(f"Manifest item {index} SHA-256 mismatch for {image}")
+
+            if not _is_supported_image(image_path):
+                raise ValueError(f"Manifest item {index} is not a supported image: {image}")
 
             verified_files += 1
 

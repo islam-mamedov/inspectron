@@ -122,6 +122,7 @@ Every manifest record must contain:
 - source dataset;
 - source image ID;
 - source landing page;
+- a direct HTTPS download URL for byte-identical reacquisition;
 - original author;
 - exact license name;
 - license URL;
@@ -129,12 +130,22 @@ Every manifest record must contain:
 
 Records missing any required provenance field are rejected.
 
+Prefer original-resolution upload URLs over server-generated thumbnail URLs.
+Thumbnail renditions (for example Wikimedia `/thumb/...` URLs) may be
+re-rendered when the hosting platform changes its image scaler, which would
+break the pinned SHA-256 digest and make the sample unrecoverable.
+
 ## Image storage
 
 Downloaded images are stored under:
 
 ```text
 benchmarks/data/
+```
+
+Everything beneath `benchmarks/data/` except `.gitkeep` is ignored by Git.
+Third-party images are never committed; they are reconstructed from the
+manifest with the downloader below.
 
 ## Reconstructing local benchmark images
 
@@ -163,3 +174,39 @@ PYTHONPATH=src python3 benchmarks/scripts/validate_dataset.py \
   --manifest benchmarks/manifests/site_safety_real.json \
   --data-root benchmarks/data
 ```
+
+## Candidate review log
+
+Candidates that were downloaded, reviewed, and rejected are recorded here so
+they are not re-acquired or silently relabeled later. Rejected files may stay
+locally under `benchmarks/data/candidates/`; they are never added to the
+manifest and never committed.
+
+### Rejected: `candidates/clear_candidate_001.jpg`
+
+- Source: Wikimedia Commons, `File:Empty warehouse (4589222821).jpg`
+- Source page: https://commons.wikimedia.org/wiki/File:Empty_warehouse_(4589222821).jpg
+- Author: nick fullerton; license: CC BY 2.0
+- SHA-256: `86432631686ba473e463806e18b3e660e69f02704f0df62ad28547bebcb30e99`
+- Originally acquired as a clear-path candidate.
+
+Rejection rationale:
+
+1. It is not a clear-path scene. The floor of the abandoned warehouse carries
+   scattered loose debris across the travel corridor, so `clear` is ruled out
+   by the taxonomy.
+2. Relabeling it is not defensible either, because independent annotators
+   would not converge on one ground truth. Traversability is a coin flip
+   between `restricted` (the visible foreground corridor is passable at
+   reduced speed) and `unknown` (large parts of the corridor are in darkness
+   and cannot be assessed), and those labels map to different policy actions
+   (`slow_down` versus `inspect_closer`).
+3. Leaning pallets against columns and a partially detached fixture hanging
+   from the ceiling make `unstable_load` a plausible but not clearly correct
+   additional label. Because `unstable_load` is a critical hazard, including
+   or excluding it flips the expected action across the stop boundary
+   (`stop` versus a non-stop action), which is the most safety-critical part
+   of the label.
+4. A benchmark sample whose expected action could defensibly be `slow_down`,
+   `inspect_closer`, or `stop` measures the annotator's choice rather than
+   model competence, so it fails the reliability bar for ground truth.

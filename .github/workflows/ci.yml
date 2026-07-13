@@ -49,6 +49,15 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
+      - name: Validate benchmark manifest provenance
+        run: |
+          python benchmarks/scripts/validate_dataset.py \
+            --manifest benchmarks/manifests/site_safety_real.json \
+            --metadata-only
+          python benchmarks/scripts/validate_dataset.py \
+            --manifest benchmarks/manifests/site_safety_real.example.json \
+            --metadata-only
+
       - name: Run simulated mission
         run: |
           python -m inspectron.cli > /tmp/inspectron-demo.json

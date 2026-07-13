@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 ALLOWED_CONTENT_TYPES = frozenset(
     {
@@ -51,12 +51,42 @@ def _safe_relative_path(
 
 def _validate_https_url(
     value: str,
-    index: int,
+    *,
+    context: str,
 ) -> None:
     parsed = urlparse(value)
 
     if parsed.scheme != "https" or not parsed.netloc:
-        raise ValueError(f"Manifest item {index} download_url must be an HTTPS URL")
+        raise ValueError(f"{context} must be an HTTPS URL")
+
+
+class _HTTPSOnlyRedirectHandler(HTTPRedirectHandler):
+    """Refuse redirects leaving HTTPS before the follow-up request is sent."""
+
+    def redirect_request(
+        self,
+        req: Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> Request | None:
+        if urlparse(newurl).scheme != "https":
+            raise ValueError(f"Refusing redirect to non-HTTPS URL: {newurl}")
+
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_HTTPS_ONLY_OPENER = build_opener(_HTTPSOnlyRedirectHandler)
+
+
+def _open_https_url(
+    request: Request,
+    *,
+    timeout: float,
+) -> Any:
+    return _HTTPS_ONLY_OPENER.open(request, timeout=timeout)
 
 
 def _sha256(path: Path) -> str:
@@ -70,7 +100,8 @@ def _sha256(path: Path) -> str:
 
 
 def _looks_like_image(path: Path) -> bool:
-    header = path.read_bytes()[:12]
+    with path.open("rb") as input_file:
+        header = input_file.read(12)
 
     is_jpeg = header.startswith(b"\xff\xd8\xff")
     is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
@@ -114,7 +145,10 @@ def load_download_records(
         )
 
         _safe_relative_path(image, index)
-        _validate_https_url(download_url, index)
+        _validate_https_url(
+            download_url,
+            context=f"Manifest item {index} download_url",
+        )
 
         if not SHA256_PATTERN.fullmatch(expected_hash):
             raise ValueError(f"Manifest item {index} has an invalid image_sha256")
@@ -142,17 +176,15 @@ def _target_path(
     relative_image: str,
 ) -> Path:
     resolved_root = data_root.resolve()
-    unresolved_target = resolved_root / relative_image
-
-    unresolved_target.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    target = unresolved_target.resolve(strict=False)
+    target = (resolved_root / relative_image).resolve(strict=False)
 
     if not target.is_relative_to(resolved_root):
         raise ValueError(f"Image path resolves outside data root: {relative_image}")
+
+    target.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     return target
 
@@ -201,7 +233,10 @@ def _download_record(
         )
 
         final_url = response.geturl()
-        _validate_https_url(final_url, 0)
+        _validate_https_url(
+            final_url,
+            context=f"Final download URL for {record['image']}",
+        )
 
         raw_content_type = response.headers.get("Content-Type") or ""
         content_type = raw_content_type.split(";", 1)[0].strip().lower()
@@ -271,7 +306,7 @@ def download_manifest(
     data_root: Path,
     max_image_bytes: int = DEFAULT_MAX_IMAGE_BYTES,
     timeout_seconds: float = 30.0,
-    opener: Callable[..., Any] = urlopen,
+    opener: Callable[..., Any] = _open_https_url,
 ) -> dict[str, object]:
     if max_image_bytes <= 0:
         raise ValueError("max_image_bytes must be positive")
