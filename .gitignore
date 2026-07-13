@@ -8,3 +8,13 @@ build/
 dist/
 *.egg-info/
 artifacts/
+.DS_Store
+.env
+.coverage
+htmlcov/
+*.log
+*.gguf
+*.safetensors
+
+benchmarks/data/*
+!benchmarks/data/.gitkeep
