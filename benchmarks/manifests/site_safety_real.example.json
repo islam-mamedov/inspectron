@@ -9,6 +9,7 @@
     "source_dataset": "REPLACE_ME",
     "source_id": "REPLACE_ME",
     "source_page_url": "https://example.invalid/replace-me",
+    "download_url": "https://example.invalid/replace-me.jpg",
     "author": "REPLACE_ME",
     "license_name": "CC BY 4.0",
     "license_url": "https://creativecommons.org/licenses/by/4.0/",

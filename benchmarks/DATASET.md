@@ -135,3 +135,31 @@ Downloaded images are stored under:
 
 ```text
 benchmarks/data/
+
+## Reconstructing local benchmark images
+
+From the repository root, run:
+
+```bash
+PYTHONPATH=src python3 benchmarks/scripts/download_dataset.py \
+  --manifest benchmarks/manifests/site_safety_real.json \
+  --data-root benchmarks/data
+```
+
+The downloader:
+
+- accepts HTTPS sources only;
+- limits the maximum response size;
+- accepts JPEG, PNG, and WebP images;
+- rejects non-image responses;
+- prevents paths from escaping the data directory;
+- verifies every image against its tracked SHA-256 digest;
+- skips network access when an existing image is already valid.
+
+After acquisition, validate the complete benchmark:
+
+```bash
+PYTHONPATH=src python3 benchmarks/scripts/validate_dataset.py \
+  --manifest benchmarks/manifests/site_safety_real.json \
+  --data-root benchmarks/data
+```
