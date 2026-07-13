@@ -285,6 +285,8 @@ def _build_report(
     policy_override_count = sum(bool(result["policy_overrode_model"]) for result in results)
 
     hazard_metrics = _hazard_metrics(results)
+    hazard_per_class = _per_hazard_metrics(results)
+    traversability_confusion_matrix = _traversability_confusion_matrix(results)
 
     model_unsafe_motion_count = _unsafe_motion_count(
         results,
@@ -306,6 +308,8 @@ def _build_report(
         "hazard_micro_precision": (hazard_metrics["precision"]),
         "hazard_micro_recall": (hazard_metrics["recall"]),
         "hazard_micro_f1": hazard_metrics["f1"],
+        "hazard_per_class": hazard_per_class,
+        "traversability_confusion_matrix": traversability_confusion_matrix,
         "model_action_accuracy": (model_action_accuracy),
         "enforced_action_accuracy": (enforced_action_accuracy),
         "policy_override_count": (policy_override_count),
@@ -365,6 +369,92 @@ def _hazard_metrics(
         "recall": recall,
         "f1": f1,
     }
+
+
+def _per_hazard_metrics(
+    results: Sequence[dict[str, object]],
+) -> dict[str, dict[str, float | int]]:
+    """Report binary detection metrics for every hazard class.
+
+    Failed samples predict no hazards, so their expected hazards count as
+    false negatives, exactly as in the micro-averaged loop. Summing the
+    per-class counts therefore reproduces the aggregate micro counts
+    whenever at least one sample succeeded; on an all-failed run the
+    aggregate deliberately reports zeroed counts while the per-class
+    entries keep their support and false negatives.
+    """
+
+    metrics: dict[str, dict[str, float | int]] = {}
+
+    for hazard in HazardType:
+        label = hazard.value
+        true_positives = 0
+        false_positives = 0
+        false_negatives = 0
+
+        for result in results:
+            is_expected = label in set(result["expected_hazards"])
+            is_predicted = label in set(result["predicted_hazards"])
+
+            if is_expected and is_predicted:
+                true_positives += 1
+            elif is_predicted:
+                false_positives += 1
+            elif is_expected:
+                false_negatives += 1
+
+        metrics[label] = _binary_classification_metrics(
+            true_positives=true_positives,
+            false_positives=false_positives,
+            false_negatives=false_negatives,
+        )
+
+    return metrics
+
+
+def _binary_classification_metrics(
+    *,
+    true_positives: int,
+    false_positives: int,
+    false_negatives: int,
+) -> dict[str, float | int]:
+    precision_denominator = true_positives + false_positives
+    recall_denominator = true_positives + false_negatives
+
+    # Undefined ratios are represented as 0.0. This avoids non-standard
+    # JSON NaN values and does not award unsupported classes perfect scores.
+    precision = true_positives / precision_denominator if precision_denominator else 0.0
+    recall = true_positives / recall_denominator if recall_denominator else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+    return {
+        "support": true_positives + false_negatives,
+        "true_positives": true_positives,
+        "false_positives": false_positives,
+        "false_negatives": false_negatives,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+    }
+
+
+def _traversability_confusion_matrix(
+    results: Sequence[dict[str, object]],
+) -> dict[str, dict[str, int]]:
+    expected_labels = [value.value for value in Traversability]
+    predicted_labels = [*expected_labels, "error"]
+
+    matrix = {
+        expected: {predicted: 0 for predicted in predicted_labels} for expected in expected_labels
+    }
+
+    for result in results:
+        expected = str(result["expected_traversability"])
+        predicted_value = result["predicted_traversability"]
+        predicted = str(predicted_value) if predicted_value is not None else "error"
+        matrix[expected][predicted] += 1
+
+    return matrix
 
 
 def _unsafe_motion_count(
