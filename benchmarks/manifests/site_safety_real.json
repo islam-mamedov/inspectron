@@ -1,0 +1,126 @@
+[
+  {
+    "id": "clear_001",
+    "image": "clear/clear_001.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Aisle in the Alexandria Chemist Warehouse store July 2024.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Aisle_in_the_Alexandria_Chemist_Warehouse_store_July_2024.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Aisle_in_the_Alexandria_Chemist_Warehouse_store_July_2024.jpg",
+    "author": "Nick-D",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "9dfe1fe37f016666c26a1cc650f26aa4d06b8c22009ed4dfe383ae34d2c06bc9"
+  },
+  {
+    "id": "human_001",
+    "image": "human_in_path/human_001.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Ikea-Brooklyn-Warehouse-Aisles.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Ikea-Brooklyn-Warehouse-Aisles.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Ikea-Brooklyn-Warehouse-Aisles.jpg",
+    "author": "Evan-Amos",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+    "image_sha256": "94199f36335ad7ffed1fb787a3bbbb2f9d5f49ef7c57b57090c682e172c4bf7a"
+  },
+  {
+    "id": "debris_001",
+    "image": "debris/debris_001.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "reroute",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Les gravats de la construction.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Les_gravats_de_la_construction.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Les_gravats_de_la_construction.jpg",
+    "author": "Merstel007",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "4b37b1ed04f146e9665330f9a1f42c50ee389cfa5a5b9aa3ec0bb93f5df4cccd"
+  },
+  {
+    "id": "liquid_spill_001",
+    "image": "liquid_spill/liquid_spill_001.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:The look of splash dirty water when did sweeping dirty water with floor wiper on the concrete floor.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:The_look_of_splash_dirty_water_when_did_sweeping_dirty_water_with_floor_wiper_on_the_concrete_floor.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/The_look_of_splash_dirty_water_when_did_sweeping_dirty_water_with_floor_wiper_on_the_concrete_floor.jpg",
+    "author": "Junyu-K",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "42a84564c6aa538548a5e9a14009208702ed18dffc1b9c7c0ea0434ed81496b2"
+  },
+  {
+    "id": "open_edge_001",
+    "image": "open_edge/open_edge_001.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Open Manhole - New Orleans September 2020.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Open_Manhole_-_New_Orleans_September_2020.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Open_Manhole_-_New_Orleans_September_2020.jpg",
+    "author": "Bart Everson",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "bbfa26d5c5a56efe13e77f273fce4e31f6a67c35c32c7dbe580522c93d92df86"
+  },
+  {
+    "id": "fire_or_smoke_001",
+    "image": "fire_or_smoke/fire_or_smoke_001.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "fire_or_smoke"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Structure Fire in Union, Mississippi 01.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Structure_Fire_in_Union,_Mississippi_01.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Structure_Fire_in_Union%2C_Mississippi_01.jpg",
+    "author": "Ktkvtsh",
+    "license_name": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "image_sha256": "71cfd853fa3837187c630473e56bc125072cefee1b4422d5987bacc98c422a7c"
+  },
+  {
+    "id": "unstable_load_001",
+    "image": "unstable_load/unstable_load_001.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Truck in India - overloaded.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Truck_in_India_-_overloaded.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Truck_in_India_-_overloaded.jpg",
+    "author": "strudelt",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "52b9a9ed9e287d7147c8a38689d863f6942627d0c65141a48768e5e99d5e0a66"
+  }
+]

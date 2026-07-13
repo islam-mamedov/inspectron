@@ -80,6 +80,10 @@ class OllamaVLMClientTests(unittest.TestCase):
             request_payload["format"],
             SITE_SAFETY_RESPONSE_SCHEMA,
         )
+        self.assertEqual(
+            request_payload["options"]["num_ctx"],
+            16384,
+        )
 
         encoded_image = request_payload["messages"][0]["images"][0]
 
@@ -87,6 +91,37 @@ class OllamaVLMClientTests(unittest.TestCase):
             base64.b64decode(encoded_image),
             b"fake-image",
         )
+
+    def test_rejects_non_positive_context_window(self) -> None:
+        with self.assertRaisesRegex(ValueError, "num_ctx"):
+            OllamaVLMClient(
+                base_url="http://localhost:11434",
+                model="qwen3-vl:8b",
+                num_ctx=0,
+            )
+
+    @patch("inspectron.clients.ollama.urlopen")
+    def test_rejects_oversized_image_without_network(
+        self,
+        mock_urlopen: object,
+    ) -> None:
+        client = OllamaVLMClient(
+            base_url="http://localhost:11434",
+            model="qwen3-vl:8b",
+            max_image_bytes=8,
+        )
+
+        with TemporaryDirectory() as directory:
+            image_path = Path(directory) / "aisle.jpg"
+            image_path.write_bytes(b"larger-than-eight-bytes")
+
+            with self.assertRaisesRegex(ValueError, "byte limit"):
+                client.generate(
+                    image_path=image_path,
+                    prompt="Assess this aisle",
+                )
+
+        mock_urlopen.assert_not_called()
 
     @patch("inspectron.clients.ollama.urlopen")
     def test_rejects_empty_content(

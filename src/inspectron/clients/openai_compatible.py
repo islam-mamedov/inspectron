@@ -22,7 +22,7 @@ class OpenAICompatibleVLMClient:
         model: str,
         api_key: str | None = None,
         timeout_seconds: float = 60.0,
-        max_image_bytes: int = 10 * 1024 * 1024,
+        max_image_bytes: int = 25 * 1024 * 1024,
     ) -> None:
         if not base_url.startswith(("http://", "https://")):
             raise ValueError("base_url must start with http:// or https://")
