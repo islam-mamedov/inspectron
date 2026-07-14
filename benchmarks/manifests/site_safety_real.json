@@ -284,5 +284,60 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "4aa4a76c1cccd96939113864562e5a6f3863a736d4200597ff0d0c909ee42e3d"
+  },
+  {
+    "id": "open_edge_002",
+    "image": "open_edge/open_edge_002.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Sinkhole, Bolebrooke Road, Bexhill.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Sinkhole,_Bolebrooke_Road,_Bexhill.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Sinkhole%2C_Bolebrooke_Road%2C_Bexhill.jpg",
+    "author": "Alexis Markwick",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "c66a2a8c29ca86982d641932675c55f344344420fc5376b6486b6c08ed6c9915"
+  },
+  {
+    "id": "human_003",
+    "image": "human_in_path/human_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Site of the 2024 Kuala Lumpur sinkhole 06.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Site_of_the_2024_Kuala_Lumpur_sinkhole_06.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Site_of_the_2024_Kuala_Lumpur_sinkhole_06.jpg",
+    "author": "Ridiculopathy",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "399e587c26b696afe8b74c0b33286494b0def479d4b4fc773d42e0e6b32970ac"
+  },
+  {
+    "id": "fire_or_smoke_002",
+    "image": "fire_or_smoke/fire_or_smoke_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Staged car fire 5.JPG",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Staged_car_fire_5.JPG",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Staged_car_fire_5.JPG",
+    "author": "Juliancolton",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+    "image_sha256": "2131f9bd1e12404938ce8f260f88bf1eedf82dccd8ac4276198610bbe9181ab0"
   }
 ]

@@ -302,6 +302,47 @@ Rejection rationale: despite the title, the frame is a portrait of an airman
 in a proximity suit beside a fire truck; no spill and no travel corridor are
 visible.
 
+### Rejected: `candidates/edge_cand_005.jpg`
+
+- Source: Wikimedia Commons, `File:Sinkhole in Inverness, Florida.jpg`
+- Author: The Eloquent Peasant; license: CC0 1.0
+- SHA-256: `b199ee10474107d34109d88d926f1f2bcd71f5b7c229e6e9ad456520854b2973`
+
+Rejection rationale: the collapse is a settling depression with narrow
+surface cracks rather than a discrete exposed drop, so annotators could
+defensibly assign either `open_edge` (forcing `stop`) or no listed hazard
+(yielding `slow_down`). Ground truth that flips the stop boundary on a
+judgment call fails the reliability bar.
+
+### Rejected: `candidates/edge_cand_007.jpg`
+
+- Source: Wikimedia Commons, `File:Site of the 2024 Kuala Lumpur sinkhole 07.jpg`
+- Author: Ridiculopathy; license: CC0 1.0
+- SHA-256: `946e5a61a4db014492a4756e16c65e2e316a0a08406c83bd1619d256ef254440`
+
+Rejection rationale: near-duplicate of the same barricaded worksite accepted
+as `human_003` (same event, author, and composition elements).
+
+### Rejected: `candidates/fire_cand_003.jpg`
+
+- Source: Wikimedia Commons, `File:BMW Car Fire (1623624284).jpg`
+- Author: Tony Webster; license: CC BY 2.0
+- SHA-256: `b1a698aee8aec175dfe034efee5a2cf0b9cbd1bec009866127bac6fa200d936f`
+
+Rejection rationale: extinguished aftermath with a charred engine bay and no
+visible flame or smoke, so the scene contains no `fire_or_smoke` evidence
+under the written definition.
+
+### Rejected: `candidates/fire_cand_004.jpg`
+
+- Source: Wikimedia Commons, `File:Mustang car fire at CVS on Key West Highway in North Potomac MD July 12 2012 (7575647972).jpg`
+- Author: Mark Taylor; license: CC BY 2.0
+- SHA-256: `9951bdcdb220e26996b198f1e18b9ce43589cde3d14b1174cdbb797d5fb4db5d`
+
+Rejection rationale: the fire is extinguished under foam with only trace
+wisps, making `fire_or_smoke` contestable, while a firefighter and hose
+lines occupy the near corridor and stack further label ambiguity.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions
@@ -321,3 +362,15 @@ stay auditable and consistent.
   liquid, and treating rain-wet ground as a spill would mislabel every wet
   outdoor scene. The distant hi-vis worker near the traffic cones was not
   labeled `human_in_path` because they are far outside the near corridor.
+- `open_edge_002` (`File:Sinkhole, Bolebrooke Road, Bexhill.jpg`): the figure
+  at the far right stands behind the site fencing, outside the corridor, so
+  `human_in_path` was not labeled.
+- `human_003` (`File:Site of the 2024 Kuala Lumpur sinkhole 06.jpg`): the
+  sinkhole itself is hidden behind water-filled barriers, so `open_edge` was
+  not labeled (no visible drop); the excavator is machinery, which the
+  taxonomy does not treat as an `unstable_load`.
+- `fire_or_smoke_002` (`File:Staged car fire 5.JPG`): a controlled training
+  burn — a real photograph of real combustion, not synthetic imagery. The
+  firefighters on the hose line stand in the approach corridor and are
+  labeled `human_in_path`; the crowd behind the caution tape is outside the
+  corridor and is not.
