@@ -660,5 +660,98 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "f0a1a9d863e22461905ad7ae046e3dfcc5d1f920ecc15912291383e3c9615c85"
+  },
+  {
+    "id": "fire_or_smoke_005",
+    "image": "fire_or_smoke/fire_or_smoke_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Fire crews in Cache La Poudre Canyon at the High Park Wildfire.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Fire_crews_in_Cache_La_Poudre_Canyon_at_the_High_Park_Wildfire.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Fire_crews_in_Cache_La_Poudre_Canyon_at_the_High_Park_Wildfire.jpg",
+    "author": "U.S. Department of Agriculture",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "14baa337f7d4b1b9ca05a7a2b6262d6d65d91f5fbaebf1c2e8e58d20ed7d83a4"
+  },
+  {
+    "id": "fire_or_smoke_006",
+    "image": "fire_or_smoke/fire_or_smoke_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:SV-RTL Firefighting (16685391802).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:SV-RTL_Firefighting_(16685391802).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/SV-RTL_Firefighting_%2816685391802%29.jpg",
+    "author": "Kecko",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "0f0e6d0864d5e03987c75c5ea3dfeac5f96ed2ecc52cced47288b3780cc34b31"
+  },
+  {
+    "id": "unstable_load_004",
+    "image": "unstable_load/unstable_load_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path",
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:An overloaded vehicle at Sabon Sarki.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:An_overloaded_vehicle_at_Sabon_Sarki.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/An_overloaded_vehicle_at_Sabon_Sarki.jpg",
+    "author": "Kambai Akau",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "26d0c291ac5842cd28bc1fb250742cb11828b000cf3a808bf225a6f566d8cf4c"
+  },
+  {
+    "id": "unstable_load_005",
+    "image": "unstable_load/unstable_load_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Chargement de sacs de nourriture sur la route de Tillaberi au Niger.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Chargement_de_sacs_de_nourriture_sur_la_route_de_Tillaberi_au_Niger.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Chargement_de_sacs_de_nourriture_sur_la_route_de_Tillaberi_au_Niger.jpg",
+    "author": "GilesBraun",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "63d5b3e557a0baba9699f33ba3e8c3620196e51895588cfba7ea214184e5ff5f"
+  },
+  {
+    "id": "unstable_load_006",
+    "image": "unstable_load/unstable_load_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:504 de transport surchargé.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:504_de_transport_surcharg%C3%A9.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/504_de_transport_surcharg%C3%A9.jpg",
+    "author": "Cyriac Gbogou",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f3012b8a6800210daa19eeba240a2d9fc1c608f8445ead87633b8b188b18ffb6"
   }
 ]

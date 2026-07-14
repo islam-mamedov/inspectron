@@ -659,3 +659,44 @@ stay auditable and consistent.
   the forward corridor. The freight train is machinery rather than a listed
   hazard, and construction material remains outside the main walking line;
   traversability is `restricted`, with `open_edge` requiring `stop`.
+- `fire_or_smoke_005` (High Park Wildfire, USDA): multiple active smoke columns
+  rise from both canyon slopes and fire crew walk on foot in the roadway ahead,
+  so both `fire_or_smoke` and `human_in_path` are labeled. Parked fire
+  apparatus narrows the lane; the near-field road is open (`restricted`).
+- `fire_or_smoke_006` (`File:SV-RTL Firefighting (16685391802).jpg`): a Swiss
+  firefighting exercise — the second controlled training burn in the group,
+  accepted because it is a distinct event, author, and composition, and
+  preferable to the same-event reserve. The hose team stands in the near
+  corridor (`human_in_path`); junked cars beside the burn are stationary
+  vehicles, not `debris`.
+- `unstable_load_004` (`File:An overloaded vehicle at Sabon Sarki.jpg`): sacks
+  are stacked roughly two roof-heights above the wagon with more bulging from
+  the open tailgate, and a pedestrian walks mid-corridor at close range, so
+  `human_in_path` joins `unstable_load`. The occupant leaning from the car
+  window is inside a vehicle and is not labeled.
+- `unstable_load_005` (`File:Chargement de sacs de nourriture sur la route de
+  Tillaberi au Niger.jpg`): unsecured sacks overflow the open trunk directly
+  ahead in-lane, with wooden sticks from the load dragging on the asphalt.
+  The sticks are still attached to the load rather than shed material, so
+  `debris` is not labeled; roadside pedestrians and grazing animals are
+  outside the corridor (animals have no taxonomy class).
+- `unstable_load_006` (`File:504 de transport surchargé.jpg`): a splayed,
+  loosely roped bundle of steel rods overhangs the wagon on all sides in the
+  lane directly ahead. Distant figures and a motorcyclist are outside the
+  following corridor and are not labeled.
+
+### Not selected: remaining unstable-load candidates
+
+- `candidates/load_cand_006.jpg` (`File:A heavily loaded pickup truck brings
+  in produce to the Siem Reap central market.jpg`, shankar s., CC BY 2.0,
+  SHA-256 `b85b3ed33445e628a0ddd3a538332d72619ee08e66b994a497171f33657b129a`):
+  reviewed and not selected — side-on viewpoint gives weak corridor relevance,
+  and the group was completed by three stronger corridor-view scenes.
+- `candidates/load_cand_008.jpg` (`File:Charcoal Vehicle.jpg`, Agbalagba,
+  CC BY-SA 4.0, SHA-256
+  `161e0fbdf50746f0db9ef9d0da1cb36497bda0c932f9eb1c2388038994ec8385`) and
+  `candidates/load_cand_010.jpg` (`File:Camion chargé.jpg`, FaauBenin,
+  CC BY-SA 4.0, SHA-256
+  `a1b153ad8ce1971a96253e84720e90743b9d2c2f0613cbbc9e0a76ae049265b6`):
+  downloaded but not visually adjudicated because the group was already
+  complete; available for future expansion review.
