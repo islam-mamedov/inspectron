@@ -122,5 +122,167 @@
     "license_name": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
     "image_sha256": "52b9a9ed9e287d7147c8a38689d863f6942627d0c65141a48768e5e99d5e0a66"
+  },
+  {
+    "id": "clear_002",
+    "image": "clear/clear_002.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Interior of The Warehouse 01 aisles.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Interior_of_The_Warehouse_01_aisles.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Interior_of_The_Warehouse_01_aisles.jpg",
+    "author": "Panamitsu",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "983c17f2444bc671fbcfaf917273ce9e238abfab3c649e8f97c3f5793173780c"
+  },
+  {
+    "id": "clear_003",
+    "image": "clear/clear_003.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Vue de l'intérieur de l'entrepôt de Leclerc Drive Beynost (janvier 2024).JPG",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Vue_de_l%27int%C3%A9rieur_de_l%27entrep%C3%B4t_de_Leclerc_Drive_Beynost_(janvier_2024).JPG",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Vue_de_l%27int%C3%A9rieur_de_l%27entrep%C3%B4t_de_Leclerc_Drive_Beynost_%28janvier_2024%29.JPG",
+    "author": "Benoît Prieur",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "b0f55e5b0f166f8cb3cc000201f1c7bb375fe10791cdbaf6ca947f0956a0c1ac"
+  },
+  {
+    "id": "debris_002",
+    "image": "debris/debris_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Interior of a warehouse in Riga.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Interior_of_a_warehouse_in_Riga.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/1/13/Interior_of_a_warehouse_in_Riga.jpg",
+    "author": "Андрей Романенко",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "b2e9fc6cfbed0e1a987863b01fa5570e6984fe4406dc5f2f91cc5f46cf59d773"
+  },
+  {
+    "id": "human_002",
+    "image": "human_in_path/human_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:FDA Inspector 2824 (4494142291).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:FDA_Inspector_2824_(4494142291).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/FDA_Inspector_2824_%284494142291%29.jpg",
+    "author": "The U.S. Food and Drug Administration",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-FDA",
+    "image_sha256": "e6caa1c1c7fd6403b4007018280e2c24db82debaec356ab4a62f5d1d64cfb8c3"
+  },
+  {
+    "id": "unstable_load_002",
+    "image": "unstable_load/unstable_load_002.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris",
+      "human_in_path",
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:India-Truck-Overload.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:India-Truck-Overload.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/6/6a/India-Truck-Overload.jpg",
+    "author": "Peter Krimbacher",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "c6bb4a16ea2bb0ac4f7fddd2ccb8ce47e3433c016fe6c60de25f0a551e992f1b"
+  },
+  {
+    "id": "unstable_load_003",
+    "image": "unstable_load/unstable_load_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Overloaded Truck (10522133955).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Overloaded_Truck_(10522133955).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Overloaded_Truck_%2810522133955%29.jpg",
+    "author": "John Hoey",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "e1869172617fe11e88acefa4d6acf69530b23f303a3273a3a150b9431243d47c"
+  },
+  {
+    "id": "liquid_spill_002",
+    "image": "liquid_spill/liquid_spill_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Flooded road, Tamale.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Flooded_road,_Tamale.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Flooded_road%2C_Tamale.jpg",
+    "author": "EST blueprint",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "8a03b1b9660b0c43e548939a9dd76be345b3c917b9b051e029c76e5eec906925"
+  },
+  {
+    "id": "debris_003",
+    "image": "debris/debris_003.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris",
+      "human_in_path",
+      "liquid_spill"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Flood eroded road.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Flood_eroded_road.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/05/Flood_eroded_road.jpg",
+    "author": "Obuezie",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "c2bc48f7ef43b192144284a09d7c3219380c29747847916d0af1d5c7dd1fd560"
+  },
+  {
+    "id": "debris_004",
+    "image": "debris/debris_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Lincoln St, Wellington flood aftermath, 20 Apr 2026.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Lincoln_St,_Wellington_flood_aftermath,_20_Apr_2026.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Lincoln_St%2C_Wellington_flood_aftermath%2C_20_Apr_2026.jpg",
+    "author": "Alan Tennyson",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4aa4a76c1cccd96939113864562e5a6f3863a736d4200597ff0d0c909ee42e3d"
   }
 ]

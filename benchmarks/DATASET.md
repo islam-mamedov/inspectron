@@ -210,3 +210,114 @@ Rejection rationale:
 4. A benchmark sample whose expected action could defensibly be `slow_down`,
    `inspect_closer`, or `stop` measures the annotator's choice rather than
    model competence, so it fails the reliability bar for ground truth.
+
+### Rejected: `candidates/clear_cand_004.jpg`
+
+- Source: Wikimedia Commons, `File:Hochregallager.jpg`
+- Author: Heinrich Taxis GmbH + Co. KG; license: CC BY-SA 4.0
+- SHA-256: `ed755a0ae77093ccfc00b7c65b27d05cb19b67791d2d3d630ede2c37acdbba61`
+- Acquired as a clear-path candidate for the 42-image expansion.
+
+Rejection rationale: a forklift with a pallet occupies the full width of the
+very-narrow aisle at mid-distance, so the scene is not clear. The honest label
+would be `blocked` with no listed hazard (a vehicle is not in the hazard
+taxonomy), which fits none of the seven scene groups, and the obstruction is
+barely visible in the dim far field, failing the evidence-quality bar.
+
+### Rejected: `candidates/human_cand_002.jpg`
+
+- Source: Wikimedia Commons, `File:Defense.gov photo essay 080605-F-3798Y-294.jpg`
+- Author: Tech Sgt. Cohen A. Young; license: Public Domain (US DoD)
+- SHA-256: `37be998e614a98d7d1410dbab1043de866674afc7b06e5c7e24ea189cb11fcf6`
+- Acquired as a human-in-path candidate for the 42-image expansion.
+
+Rejection rationale: night-vision intensifier imagery (monochrome green
+phosphor, heavy blur) is a different sensor modality from the RGB robot
+camera this benchmark represents, so the sample would not measure the
+deployed perception path.
+
+### Rejected: `candidates/load_cand_004.jpg`
+
+- Source: Wikimedia Commons, `File:Slidell after Katrina - overloaded pick up truck.jpg`
+- Author: Steve Wilson; license: CC BY 2.0
+- SHA-256: `24044c413769a7242908271d2a7b9c0609bb1203806038253d726ffab489c79e`
+- Acquired as an unstable-load candidate for the 42-image expansion.
+
+Rejection rationale: the photograph shows a hurricane-collapsed house resting
+on a crushed pickup, viewed side-on with no coherent robot travel corridor.
+The unstable element is building fabric, which this dataset's precedent
+(see `clear_candidate_001`) does not treat as an `unstable_load`, and the
+corridor-dependent labels cannot be assigned reliably.
+
+### Rejected: `candidates/spill_cand_001.jpg`
+
+- Source: not recoverable (no Wikimedia Commons SHA-1 match; the file was
+  most likely acquired as a server-rendered thumbnail during the pilot
+  session, so its bytes do not match any original upload)
+- SHA-256: `269b98f3e18d4467d603b74dcefcace44d71d87ebd2ef69cb22843b467959419`
+- Acquired as a liquid-spill candidate during the pilot session.
+
+Rejection rationale: steep top-down close-up of a floor being squeegeed
+toward a drain, with no robot travel corridor in frame; additionally the
+original source, author, and license cannot be verified, which independently
+fails the provenance requirements.
+
+### Rejected: `candidates/edge_cand_002.jpg`
+
+- Source: Wikimedia Commons, `File:SEWER - Open Manhole - New Orleans September 2020.jpg`
+- Author: Bart Everson; license: CC BY 2.0
+- SHA-256: `aba1f83324c0b9941ddd78e1d1b7d809687174ecad60abbaaf80ca2f619b020b`
+
+Rejection rationale: straight-down close-up of the same open manhole already
+accepted as `open_edge_001`, photographed by the same author at the same
+event; no corridor context and a near-duplicate scene.
+
+### Rejected: `candidates/edge_cand_003.jpg`
+
+- Source: Wikimedia Commons, `File:Hard-manhole-open-01ASD.jpg`
+- Author: Asurnipal; license: CC BY-SA 4.0
+- SHA-256: `4863639435cedc08890e0344345392e908c0a4b7277e90b1fb4229cd90c0b47f`
+
+Rejection rationale: downward close-up of an open manhole without usable
+travel-corridor geometry for an embodied navigation frame.
+
+### Reserve: `candidates/fire_cand_002.jpg`
+
+- Source: Wikimedia Commons, `File:Structure Fire in Union, Mississippi 04.jpg`
+- Author: Ktkvtsh; license: CC BY 4.0
+- SHA-256: `f4caaf482aa81f885f26280416e05c0fffd7716ee662189337b0adb8a50d7b45`
+
+Held in reserve, not accepted: a different composition of the same fire
+already represented by `fire_or_smoke_001`, with firefighters and hose lines
+in the road corridor. Same-event near-duplicates weaken scene diversity, so
+this file may be used only if six independent fire scenes cannot be sourced.
+
+### Rejected: `candidates/spill_cand_003.jpg`
+
+- Source: Wikimedia Commons, `File:633rd LRS, CES Airmen participate in fuel spill exercise 140722-F-YC840-020.jpg`
+- Author: Senior Airman Aubrey White; license: Public Domain (US Air Force)
+- SHA-256: `c9032a7d87913cac432db6eee8fb4c06a37f24a4938c2e9be9fce971ee244a69`
+
+Rejection rationale: despite the title, the frame is a portrait of an airman
+in a proximity suit beside a fire truck; no spill and no travel corridor are
+visible.
+
+## Label notes for accepted samples
+
+Judgment calls on accepted records are logged here so annotation decisions
+stay auditable and consistent.
+
+- `unstable_load_002` (`File:India-Truck-Overload.jpg`): `open_edge` was
+  considered for the mountain roadside and excluded — the visible left edge
+  shows shadowed rock face and stacked sacks, not an exposed drop adjacent
+  to the corridor.
+- `debris_003` (`File:Flood eroded road.jpg`): `open_edge` was considered
+  for the flood-eroded gully and excluded — the erosion is shallow uneven
+  terrain, not a discrete exposed drop, excavation, or platform edge under
+  the written definition.
+- `debris_004` (`File:Lincoln St, Wellington flood aftermath, 20 Apr 2026.jpg`):
+  `liquid_spill` was considered for the rain-wet pavement and excluded — the
+  surface shows ambient wetness rather than a distinct pooled or flowing
+  liquid, and treating rain-wet ground as a spill would mislabel every wet
+  outdoor scene. The distant hi-vis worker near the traffic cones was not
+  labeled `human_in_path` because they are far outside the near corridor.
