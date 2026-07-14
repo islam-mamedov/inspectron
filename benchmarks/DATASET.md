@@ -627,3 +627,11 @@ stay auditable and consistent.
 - `human_006` (`File:People walking in Parliament House, Helsinki.jpg`): the
   group occupies the center of the only coherent forward corridor; no other
   listed hazard is present.
+- `debris_005` (`File:Hurricane Sandy downed tree Kutztown PA.jpg`): the
+  fallen trunk spans the full paved corridor and cannot be traversed or passed
+  safely within the visible route. Traversability is therefore `blocked`, and
+  the noncritical `debris` policy requires `reroute` rather than `stop`.
+- `debris_006` (`File:Dead Tree across Highgrove Road; Spring Hill, FL; Sept 2024-03.jpg`):
+  several branches occupy portions of both lanes, but continuous pavement
+  remains visible between and around them. The corridor is therefore
+  `restricted`, with `debris` producing the `slow_down` action.

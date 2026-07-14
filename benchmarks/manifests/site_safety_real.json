@@ -534,5 +534,41 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "8f69d548ba3aa203e07bad2ddd45762cd32b6a0a1c9eafaddd8d79436547d12a"
+  },
+  {
+    "id": "debris_005",
+    "image": "debris/debris_005.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "reroute",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Hurricane Sandy downed tree Kutztown PA.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Hurricane_Sandy_downed_tree_Kutztown_PA.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Hurricane_Sandy_downed_tree_Kutztown_PA.jpg",
+    "author": "Dough4872",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+    "image_sha256": "ebea4c418cc325970544b133aebdef73371750406194fa3b9feb40ed95aa6977"
+  },
+  {
+    "id": "debris_006",
+    "image": "debris/debris_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Dead Tree across Highgrove Road; Spring Hill, FL; Sept 2024-03.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Dead_Tree_across_Highgrove_Road;_Spring_Hill,_FL;_Sept_2024-03.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Dead_Tree_across_Highgrove_Road%3B_Spring_Hill%2C_FL%3B_Sept_2024-03.jpg",
+    "author": "DanTD",
+    "license_name": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "image_sha256": "a83efcb2aea209bc817deab0ca9177016c27aba5289e6e5c85815dfaec4b3768"
   }
 ]
