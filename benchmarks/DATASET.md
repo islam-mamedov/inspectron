@@ -644,3 +644,18 @@ stay auditable and consistent.
   passable floor remains visible around it. The warning signs and cone are
   purposeful safety controls rather than loose `debris`; their spacing leaves
   a reduced-speed route, so the scene is `restricted` with action `slow_down`.
+- `open_edge_004` (`File:Maputo Railway Station platform view.jpg`): the empty
+  station platform provides a coherent forward corridor beside an exposed
+  track-level drop. Benches, signs, and planters stay outside the travel line;
+  traversability is `restricted`, and the critical `open_edge` policy requires
+  `stop`.
+- `open_edge_005` (`File:Whitstable Harbour Quayside 8123.jpg`): the working
+  quayside has an unguarded drop to the water immediately beside the route.
+  Mooring ropes, cable, and containers are operational dock equipment rather
+  than loose `debris`, but they pinch off the already narrow corridor, so
+  traversability is `blocked` and the required action is `stop`.
+- `open_edge_006` (`File:Platform no.2 of Eluru Railway station (01).jpg`): the
+  camera looks along a railway platform with an exposed track-level drop beside
+  the forward corridor. The freight train is machinery rather than a listed
+  hazard, and construction material remains outside the main walking line;
+  traversability is `restricted`, with `open_edge` requiring `stop`.

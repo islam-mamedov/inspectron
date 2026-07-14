@@ -606,5 +606,59 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "4e42e8290b31a2c8e4b76be7d8028c1c88d873e19e1131dcb82ae3a301aa28a1"
+  },
+  {
+    "id": "open_edge_004",
+    "image": "open_edge/open_edge_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Maputo Railway Station platform view.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Maputo_Railway_Station_platform_view.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Maputo_Railway_Station_platform_view.jpg",
+    "author": "Claus Wonnemann (Chwonn)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "88c3cd0cf77ced412bf74bf3d17ca986d53dd7e443fc53322467c590a911a5f6"
+  },
+  {
+    "id": "open_edge_005",
+    "image": "open_edge/open_edge_005.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Whitstable Harbour Quayside 8123.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Whitstable_Harbour_Quayside_8123.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/71/Whitstable_Harbour_Quayside_8123.jpg",
+    "author": "ClemRutter",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "149ea37e8263fadde41f3688893bc687045def13e1372bd7ee03cc12b2f0e86e"
+  },
+  {
+    "id": "open_edge_006",
+    "image": "open_edge/open_edge_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Platform no.2 of Eluru Railway station (01).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Platform_no.2_of_Eluru_Railway_station_(01).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Platform_no.2_of_Eluru_Railway_station_%2801%29.jpg",
+    "author": "iMahesh (IM3847)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f0a1a9d863e22461905ad7ae046e3dfcc5d1f920ecc15912291383e3c9615c85"
   }
 ]
