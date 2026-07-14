@@ -570,5 +570,41 @@
     "license_name": "CC BY 4.0",
     "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "image_sha256": "a83efcb2aea209bc817deab0ca9177016c27aba5289e6e5c85815dfaec4b3768"
+  },
+  {
+    "id": "liquid_spill_005",
+    "image": "liquid_spill/liquid_spill_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:A photo of a water leak on Camberwell Place 2022-10-08 1.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_1.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/4/43/A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_1.jpg",
+    "author": "Thomas Booker (CoderThomasB)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "748b3c1f2fd571b54a87d1ca8c30d4a3d11b2410774f9cebbf9cf915512f9317"
+  },
+  {
+    "id": "liquid_spill_006",
+    "image": "liquid_spill/liquid_spill_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Wellington station bus interchange wet floor signs 02.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Wellington_station_bus_interchange_wet_floor_signs_02.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/Wellington_station_bus_interchange_wet_floor_signs_02.jpg",
+    "author": "Panamitsu",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4e42e8290b31a2c8e4b76be7d8028c1c88d873e19e1131dcb82ae3a301aa28a1"
   }
 ]

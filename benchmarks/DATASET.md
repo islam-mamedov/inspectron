@@ -635,3 +635,12 @@ stay auditable and consistent.
   several branches occupy portions of both lanes, but continuous pavement
   remains visible between and around them. The corridor is therefore
   `restricted`, with `debris` producing the `slow_down` action.
+- `liquid_spill_005` (`File:A photo of a water leak on Camberwell Place 2022-10-08 1.jpg`):
+  a shallow active leak visibly flows across the paved corridor, but the road
+  surface and continuous route remain visible. The scene is `restricted`, not
+  `blocked`, and the `liquid_spill` policy produces `slow_down`.
+- `liquid_spill_006` (`File:Wellington station bus interchange wet floor signs 02.jpg`):
+  pooled water crosses part of the indoor pedestrian corridor while dry,
+  passable floor remains visible around it. The warning signs and cone are
+  purposeful safety controls rather than loose `debris`; their spacing leaves
+  a reduced-speed route, so the scene is `restricted` with action `slow_down`.
