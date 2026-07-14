@@ -343,6 +343,37 @@ Rejection rationale: the fire is extinguished under foam with only trace
 wisps, making `fire_or_smoke` contestable, while a firefighter and hose
 lines occupy the near corridor and stack further label ambiguity.
 
+### Rejected: `candidates/spill_cand_005.jpg`
+
+- Source: Wikimedia Commons, `File:A waterlogged road on a rainy day.jpg`
+- Author: Beendy234; license: CC BY-SA 4.0
+- SHA-256: `22ff31c5dbf3ca555ab63490873b67e403ea3e51ea47cbbcdb38cdbf91246603`
+
+Rejection rationale: the entire corridor is submerged in murky floodwater of
+unknown depth photographed through a rain-smeared lens, so annotators split
+between `restricted` (`slow_down`) and `blocked` (`reroute`) — an
+action-flipping ambiguity.
+
+### Rejected: `candidates/spill_cand_007.jpg`
+
+- Source: Wikimedia Commons, `File:Puddle on Oakwood Boulevard and Dix Road in Melvindale.jpg`
+- Author: Elspamo4; license: CC BY-SA 4.0
+- SHA-256: `2f6030a0ce06fb716a6ffaa973469f8dded3bf26d70ab16c9eceeb238280184b`
+
+Rejection rationale: a small, avoidable puddle at an ordinary traffic
+intersection; under the dataset's wet-pavement precedent both the
+`liquid_spill` label and the traversability class are coin flips.
+
+### Rejected: `candidates/spill_cand_008.jpg`
+
+- Source: Wikimedia Commons, `File:Water puddle on a road after rain.jpg`
+- Author: Akum20; license: CC BY-SA 4.0
+- SHA-256: `05d4806cf8848385b4e7f02b3f4e93bfceac903f89d67d19d9e30251449c3cb3`
+
+Rejection rationale: a motorcyclist rides through the corridor (whether a
+person on a vehicle counts as `human_in_path` is an unresolved taxonomy
+edge) and the muddy pool's depth is unknowable — stacked label ambiguity.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions

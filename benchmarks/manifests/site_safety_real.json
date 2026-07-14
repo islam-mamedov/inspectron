@@ -339,5 +339,41 @@
     "license_name": "Public Domain",
     "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
     "image_sha256": "2131f9bd1e12404938ce8f260f88bf1eedf82dccd8ac4276198610bbe9181ab0"
+  },
+  {
+    "id": "liquid_spill_003",
+    "image": "liquid_spill/liquid_spill_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Big puddle on the road from village Budy.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Big_puddle_on_the_road_from_village_Budy.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Big_puddle_on_the_road_from_village_Budy.jpg",
+    "author": "Nickispeaki",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f0103e784254d24f908f8d40dbcce6706498642811d0de24d69c83bfdbf300ef"
+  },
+  {
+    "id": "liquid_spill_004",
+    "image": "liquid_spill/liquid_spill_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Water puddle on the road.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Water_puddle_on_the_road.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/72/Water_puddle_on_the_road.jpg",
+    "author": "Akum20",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "83014c3b7c88cc4f7d4a3be24bcae15ad4ec4f7e3fc4b39d1ef916fdce480a35"
   }
 ]
