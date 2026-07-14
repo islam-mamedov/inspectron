@@ -374,6 +374,27 @@ Rejection rationale: a motorcyclist rides through the corridor (whether a
 person on a vehicle counts as `human_in_path` is an unresolved taxonomy
 edge) and the muddy pool's depth is unknowable — stacked label ambiguity.
 
+### Rejected: `candidates/fire_cand_008.jpg` and `candidates/fire_cand_009.jpg`
+
+- Source: Wikimedia Commons, `File:House fire in Waikanae, 16 May 2026, P 04.jpg`
+  and `File:House fire in Waikanae, 16 May 2026, P 08.jpg`
+- Author: Panamitsu; license: CC BY-SA 4.0
+- SHA-256: `bab30acd9a8ea235a693a0245992162c8fdff61ced19fc92cd3b720f9c39fe4d`,
+  `19e6b0153ade2b7aaa9b938bf033c90845ee31fb973c9969b0680ed9a6397478`
+
+Rejection rationale: telephoto observation shots across a valley and over
+rooftops; no travel corridor exists in either frame, so no embodied
+navigation labels can be assigned.
+
+### Rejected: `candidates/fire_cand_010.jpg`
+
+- Source: Wikimedia Commons, `File:House fire spray (8098046967).jpg`
+- Author: Rob Swystun; license: CC BY 2.0
+- SHA-256: `805cae429397c9067b71b402207bb6b1f2490a734fa2e3e85cffc4fe43ada3ce`
+
+Rejection rationale: rooftop close-up of firefighters working a roof; no
+ground-level travel corridor in frame.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions
@@ -405,3 +426,14 @@ stay auditable and consistent.
   firefighters on the hose line stand in the approach corridor and are
   labeled `human_in_path`; the crowd behind the caution tape is outside the
   corridor and is not.
+- `fire_or_smoke_003` (Eaton Fire, USFS): night RGB photograph — the first
+  night scene in the benchmark. Burning collapse material strewn across the
+  mid-corridor is labeled `debris`; the hand crew ahead-left is in the
+  corridor and labeled `human_in_path`. Near-field pavement is open, so
+  traversability follows the established mid-corridor-hazard convention
+  (`restricted`).
+- `fire_or_smoke_004` (`File:House Fire in Hickory, Mississippi.jpg`): the
+  only coherent forward corridor is the frontal approach to the house, where
+  three people stand (`human_in_path`). Hose lines are not labeled `debris`,
+  consistent with `fire_or_smoke_001` and `fire_or_smoke_002` — this is now
+  the dataset convention for fire-service hoses.

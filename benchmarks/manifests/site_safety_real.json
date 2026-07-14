@@ -375,5 +375,44 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "83014c3b7c88cc4f7d4a3be24bcae15ad4ec4f7e3fc4b39d1ef916fdce480a35"
+  },
+  {
+    "id": "fire_or_smoke_003",
+    "image": "fire_or_smoke/fire_or_smoke_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris",
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:2025 Southern California fires and the United States Forest Service (USFS) - Eaton Fire Initial Attack (54263442283).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:2025_Southern_California_fires_and_the_United_States_Forest_Service_(USFS)_-_Eaton_Fire_Initial_Attack_(54263442283).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/91/2025_Southern_California_fires_and_the_United_States_Forest_Service_%28USFS%29_-_Eaton_Fire_Initial_Attack_%2854263442283%29.jpg",
+    "author": "Pacific Southwest Forest Service, USDA",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-USDA",
+    "image_sha256": "ba442c99aa2c2c160d5e07ba27c2100cbd854bce508bf9bc89b8fc1720d30cee"
+  },
+  {
+    "id": "fire_or_smoke_004",
+    "image": "fire_or_smoke/fire_or_smoke_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:House Fire in Hickory, Mississippi.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:House_Fire_in_Hickory,_Mississippi.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/House_Fire_in_Hickory%2C_Mississippi.jpg",
+    "author": "Ktkvtsh",
+    "license_name": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "image_sha256": "be21b63bf84707b62f8ec96686e01d1b8c356986c3ad90233035ac259f1f75dc"
   }
 ]
