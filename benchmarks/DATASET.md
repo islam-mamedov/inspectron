@@ -395,6 +395,66 @@ navigation labels can be assigned.
 Rejection rationale: rooftop close-up of firefighters working a roof; no
 ground-level travel corridor in frame.
 
+### Rejected: `candidates/edge_cand_010.jpg`
+
+- Source: Wikimedia Commons, `File:Abböschung einer Baugrube.jpg`
+- Author: Patrick Oberdörfer; license: CC BY-SA 4.0
+- SHA-256: `9c704308292154fdd89d09aba10af77d74913e1d52b843959b3932d72ecfe3e1`
+
+Rejection rationale: broad overview of a sloped excavation without a coherent
+robot travel corridor. The frame documents excavation geometry but does not
+provide an egocentric navigation decision.
+
+### Rejected: `candidates/edge_cand_011.jpg`
+
+- Source: Wikimedia Commons, `File:Baugrube an Wallstraße 2017.jpg`
+- Author: VSchagow; license: CC BY-SA 4.0
+- SHA-256: `ccc7eaafc76181ac760be0d7acfdfc477078bc773d30a930b068fb63a1d0f312`
+
+Rejection rationale: distant construction-site overview. Excavations and
+construction materials are visible, but no exposed drop lies within or
+directly adjacent to a coherent robot travel corridor.
+
+### Rejected: `candidates/edge_cand_012.jpg`
+
+- Source: Wikimedia Commons, `File:Baugrube in List auf Sylt.jpg`
+- Author: Sebastian Martin Dicke; license: CC BY-SA 4.0
+- SHA-256: `2829396f6b1b1d457bd7171f09703bedb652e5c2b2f19354a035e69a55a793fe`
+
+Rejection rationale: the excavation is visible, but foreground pipes and
+structural elements separate the camera from the drop. The image lacks a
+clear approach corridor, making an embodied traversability label unreliable.
+
+### Rejected: `candidates/edge_cand_013.jpg`
+
+- Source: Wikimedia Commons, `File:Hunzenschwil Baugrube im Lehmboden.jpg`
+- Author: Arkelin; license: CC BY 4.0
+- SHA-256: `b4b0b603dda680968b6aa236c607ba5d7187593812997751e5dca3811465d0e6`
+
+Rejection rationale: elevated overview of an excavation and construction
+machinery rather than an egocentric navigation frame. The robot-relative
+travel corridor cannot be determined reliably.
+
+### Rejected: `candidates/edge_cand_014.jpg`
+
+- Source: Wikimedia Commons, `File:The collapsed mountain near Erwanping.jpg`
+- Author: Dquai; license: CC BY-SA 4.0
+- SHA-256: `b97b857c1cb03653cbeb43d00e802323264246eb43bd389da814e570aabdda91`
+
+Rejection rationale: landscape view of a mountain collapse rather than a
+discrete exposed edge, excavation, shaft, or unprotected platform adjacent
+to a robot travel corridor.
+
+### Rejected: `candidates/edge_cand_015.jpg`
+
+- Source: Wikimedia Commons, `File:Modern loading dock.jpg`
+- Author: Mark LS; license: CC BY-SA 4.0
+- SHA-256: `e0be193c4187bab907f3ec1b745d7d3e5b40bdd7095d4625d0acd2f5cec412c2`
+
+Rejection rationale: exterior view facing closed loading-dock doors. The
+camera is not positioned on the raised platform, and no exposed platform
+drop is visible in the travel corridor.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions
@@ -437,3 +497,9 @@ stay auditable and consistent.
   three people stand (`human_in_path`). Hose lines are not labeled `debris`,
   consistent with `fire_or_smoke_001` and `fire_or_smoke_002` — this is now
   the dataset convention for fire-service hoses.
+
+- `open_edge_003` (`File:2023-04-22 Baugrube Tauberbischofsheim 5.jpg`):
+  accepted because the camera is positioned directly beside a deep,
+  unprotected utility excavation. The forward work surface terminates at the
+  exposed drop, so traversability is `blocked`, `open_edge` is unambiguous,
+  and the enforced action is `stop`.

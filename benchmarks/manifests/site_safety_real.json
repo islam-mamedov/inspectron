@@ -414,5 +414,23 @@
     "license_name": "CC BY 4.0",
     "license_url": "https://creativecommons.org/licenses/by/4.0/",
     "image_sha256": "be21b63bf84707b62f8ec96686e01d1b8c356986c3ad90233035ac259f1f75dc"
+  },
+  {
+    "id": "open_edge_003",
+    "image": "open_edge/open_edge_003.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:2023-04-22 Baugrube Tauberbischofsheim 5.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:2023-04-22_Baugrube_Tauberbischofsheim_5.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/2023-04-22_Baugrube_Tauberbischofsheim_5.jpg",
+    "author": "Triplec85",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4e470c341cf6f30899b4d333190a203a0818aa59cf965f612395afbb5a2cd182"
   }
 ]
