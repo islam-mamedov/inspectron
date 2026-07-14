@@ -498,5 +498,41 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "7ea808be072c4dc56dfdda68d7cef36afe23d9e16b16fe58d678aaf7bd51f788"
+  },
+  {
+    "id": "human_005",
+    "image": "human_in_path/human_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Students on corridor in Viator High School.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Students_on_corridor_in_Viator_High_School.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Students_on_corridor_in_Viator_High_School.jpg",
+    "author": "Dquai",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "1216341c6a57b5a717856a99b4d0a7ab59967ec4c996c5c938646d7bc863bf3b"
+  },
+  {
+    "id": "human_006",
+    "image": "human_in_path/human_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:People walking in Parliament House, Helsinki.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:People_walking_in_Parliament_House,_Helsinki.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/80/People_walking_in_Parliament_House%2C_Helsinki.jpg",
+    "author": "Zache",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "8f69d548ba3aa203e07bad2ddd45762cd32b6a0a1c9eafaddd8d79436547d12a"
   }
 ]

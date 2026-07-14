@@ -527,6 +527,37 @@ Held in reserve: the forward concourse is level and clear, but
 author. Retaining only one avoids unnecessary same-author public-concourse
 concentration.
 
+### Rejected: `candidates/human_cand_005.jpg`
+
+- Source: Wikimedia Commons, `File:Man grocery shopping.jpg`
+- Author: Bill Branson; license: Public Domain
+- SHA-256: `a1be1b33ff15a06102b18449c28f004f0745c19ecd6d175889be18b19e8c845c`
+
+Rejection rationale: close-up side portrait of a shopper examining packaged
+meat. No floor or coherent travel corridor is visible, so embodied
+traversability cannot be assigned.
+
+### Reserve: `candidates/human_cand_006.jpg`
+
+- Source: Wikimedia Commons, `File:Women grocery shopping.jpg`
+- Author: Bill Branson; license: Public Domain
+- SHA-256: `0b026780f88d8d86dee777e2bdf41481a210f3bece7e198e5857cf2eae781977`
+
+Held in reserve: two shoppers and their carts occupy a grocery aisle and the
+scene would support `human_in_path`, but the two accepted corridor scenes
+provide clearer robot-relative geometry and greater environment diversity.
+
+### Rejected: `candidates/human_cand_007.jpg`
+
+- Source: Wikimedia Commons, `File:US Navy 020813-N-3235P-527 A mother shops for groceries with her son and daughter in the freezer section of the Navy Commissary located just outside Naval Air Station Oceana.jpg`
+- Author: Photographer's Mate 1st Class Michael W. Pendergrass, U.S. Navy;
+  license: Public Domain
+- SHA-256: `d854d8d82ca6376d410c176e560f3ef62e7c8e211f6a22972202d3e9fc52cc95`
+
+Rejection rationale: close-range family-and-cart composition with almost no
+visible aisle floor. The frame documents shopping activity but not a coherent
+robot navigation corridor.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions
@@ -588,3 +619,11 @@ stay auditable and consistent.
   pedestrians occupy the forward-left walking corridor. Trains are machinery,
   not a listed hazard, and no exposed platform drop lies in the robot corridor,
   so the only hazard label is `human_in_path`.
+- `human_005` (`File:Students on corridor in Viator High School.jpg`): the
+  student group occupies most of the mid-corridor while the near foreground
+  remains traversable, following the benchmark's `restricted` mid-corridor
+  convention. The continuous solid parapet protects the elevated walkway, so
+  `open_edge` is excluded.
+- `human_006` (`File:People walking in Parliament House, Helsinki.jpg`): the
+  group occupies the center of the only coherent forward corridor; no other
+  listed hazard is present.
