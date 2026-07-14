@@ -455,6 +455,78 @@ Rejection rationale: exterior view facing closed loading-dock doors. The
 camera is not positioned on the raised platform, and no exposed platform
 drop is visible in the travel corridor.
 
+### Rejected: `candidates/clear_cand_005.jpg`
+
+- Source: Wikimedia Commons, `File:Empty Shwedagon Pagoda Corridor - Yangon.jpg`
+- Author: Maung Sun; license: CC BY-SA 4.0
+- SHA-256: `2d029924cb5e26563d81410e24df3f80e9bf31cbd43caaa595b579fda5d61ca2`
+
+Rejection rationale: the apparently clear corridor terminates in a flight of
+stairs. For the ground robot represented by the benchmark, the forward route
+is not continuously traversable, so `clear` would be an unreliable label.
+
+### Rejected: `candidates/clear_cand_006.jpg`
+
+- Source: Wikimedia Commons, `File:Corridor at Kallio Library empty of people on an afternoon in October 2024.jpg`
+- Author: JIP; license: CC BY-SA 4.0
+- SHA-256: `d38abb19b7545e1610db9296cb5bb300ad5d73b4e591a61359ccacf82ba301e6`
+
+Rejection rationale: the central route descends a staircase at the end of the
+short level approach. Treating the scene as `clear` would ignore a
+non-traversable transition for a wheeled ground robot.
+
+### Rejected: `candidates/clear_cand_009.jpg`
+
+- Source: Wikimedia Commons, `File:Tunnel inside the Südtiroler Platz underground station.jpg`
+- Author: MarinaBaranova; license: CC BY-SA 4.0
+- SHA-256: `9f62bd71b315262bae6e992606a28076dc3888b5d73a7a40f1c8e8b7ba0c7d54`
+
+Rejection rationale: people and a stepped station transition occupy the route
+endpoint. Whether the scene is still `clear` or requires `human_in_path` and
+a stop depends on the chosen planning horizon, creating action-level label
+ambiguity.
+
+### Rejected: `candidates/clear_cand_010.jpg`
+
+- Source: Wikimedia Commons, `File:Automatisches Hochregallager mit Regalbediengeräten.jpg`
+- Author: Gilgen Logistics AG; license: CC BY-SA 4.0
+- SHA-256: `f1264d22acba4b61d785240106e1409d5669e720fdef5102361cdee10de805f1`
+
+Rejection rationale: front-facing industrial rack machinery fills the frame,
+with no visible floor or coherent robot travel corridor. Corridor-dependent
+traversability cannot be annotated.
+
+### Rejected: `candidates/clear_cand_011.jpg`
+
+- Source: Wikimedia Commons, `File:Aisles Near the Entrance of a Builders Warehouse Store, in Kirstenhof, Cape Town.jpg`
+- Author: Husskeyy; license: CC BY-SA 4.0
+- SHA-256: `dfc66b83540c6f2be0cb7d48e8e43c6ebce7edeca9878a5efa770ecd5c032a10`
+
+Rejection rationale: multiple people stand in the far travel corridor and a
+loose object lies on the floor. Annotators could defensibly select `clear`,
+`human_in_path`, or `debris`, and those choices cross policy-action boundaries.
+
+### Rejected: `candidates/clear_cand_014.jpg`
+
+- Source: Wikimedia Commons, `File:Corridor at Ruoholahti shopping centre empty of people on an evening in November 2025.jpg`
+- Author: JIP; license: CC BY-SA 4.0
+- SHA-256: `d1eaf70a33c7826e21eef5a6dfbdce376e792b7dc5e9e4e9edff55a732fd1ec4`
+
+Rejection rationale: a loose piece of paper lies in the middle of the
+corridor. Although small, including or excluding `debris` changes the policy
+from `proceed` to `slow_down`, so the scene fails the action-reliability bar.
+
+### Reserve: `candidates/clear_cand_015.jpg`
+
+- Source: Wikimedia Commons, `File:Corridor at Pasila railway station empty of people on a morning in July 2025.jpg`
+- Author: JIP; license: CC BY-SA 4.0
+- SHA-256: `8233e76baec66e37f1392da418b46397f5c0ac9e2f86e451ac3e474c9bd48a6a`
+
+Held in reserve: the forward concourse is level and clear, but
+`clear_cand_013.jpg` provides a stronger unobstructed corridor from the same
+author. Retaining only one avoids unnecessary same-author public-concourse
+concentration.
+
 ## Label notes for accepted samples
 
 Judgment calls on accepted records are logged here so annotation decisions
@@ -503,3 +575,16 @@ stay auditable and consistent.
   unprotected utility excavation. The forward work surface terminates at the
   exposed drop, so traversability is `blocked`, `open_edge` is unambiguous,
   and the enforced action is `stop`.
+- `clear_004` (`File:Perth (AU), Elizabeth Quay Bridge -- 2019 -- 0252.jpg`):
+  the elevated path is fully enclosed by continuous guardrails on both sides,
+  so it is a clear traversable corridor and not an `open_edge` scene.
+- `clear_005` (`File:Aisle in a Chemist Warehouse store in Subiaco September 2025.jpg`):
+  shelves and hanging price labels remain outside the aisle footprint; the
+  level floor is empty and unobstructed throughout the visible corridor.
+- `clear_006` (`File:Corridor at Redi empty of people on a morning in June 2022.jpg`):
+  the visible human figure on the right is printed advertising behind glass,
+  not a physical person in the travel corridor.
+- `human_004` (`File:Gourock Railway Station concourse Mar 2019.jpg`): two
+  pedestrians occupy the forward-left walking corridor. Trains are machinery,
+  not a listed hazard, and no exposed platform drop lies in the robot corridor,
+  so the only hazard label is `human_in_path`.

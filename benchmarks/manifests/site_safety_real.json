@@ -432,5 +432,71 @@
     "license_name": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "image_sha256": "4e470c341cf6f30899b4d333190a203a0818aa59cf965f612395afbb5a2cd182"
+  },
+  {
+    "id": "clear_004",
+    "image": "clear/clear_004.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Perth (AU), Elizabeth Quay Bridge -- 2019 -- 0252.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Perth_(AU),_Elizabeth_Quay_Bridge_--_2019_--_0252.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Perth_%28AU%29%2C_Elizabeth_Quay_Bridge_--_2019_--_0252.jpg",
+    "author": "Dietmar Rabich",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "ca3550e75fa38b6268bbafa1cbfec6843c0e90bce9800733381eb835c47b9b55"
+  },
+  {
+    "id": "clear_005",
+    "image": "clear/clear_005.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Aisle in a Chemist Warehouse store in Subiaco September 2025.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Aisle_in_a_Chemist_Warehouse_store_in_Subiaco_September_2025.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Aisle_in_a_Chemist_Warehouse_store_in_Subiaco_September_2025.jpg",
+    "author": "Nick-D",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "aa0f618b11cae805540be41ad2afb95b2243ab197b7fc54e72bf4c3b7210f596"
+  },
+  {
+    "id": "clear_006",
+    "image": "clear/clear_006.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Corridor at Redi empty of people on a morning in June 2022.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Corridor_at_Redi_empty_of_people_on_a_morning_in_June_2022.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Corridor_at_Redi_empty_of_people_on_a_morning_in_June_2022.jpg",
+    "author": "JIP",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "6071f1e8682d20c14bf85e25f2977d25b4a50616f280762e30da8a1db99d4444"
+  },
+  {
+    "id": "human_004",
+    "image": "human_in_path/human_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Gourock Railway Station concourse Mar 2019.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Gourock_Railway_Station_concourse_Mar_2019.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Gourock_Railway_Station_concourse_Mar_2019.jpg",
+    "author": "dave souza",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "7ea808be072c4dc56dfdda68d7cef36afe23d9e16b16fe58d678aaf7bd51f788"
   }
 ]
