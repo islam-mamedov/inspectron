@@ -60,7 +60,7 @@ class OllamaVLMClient:
             "format": self.response_schema,
             "options": {
                 "temperature": 0,
-                "num_predict": 2048,
+                "num_predict": 8192,
                 "num_ctx": self.num_ctx,
             },
             "messages": [

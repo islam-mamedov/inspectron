@@ -84,6 +84,12 @@ class OllamaVLMClientTests(unittest.TestCase):
             request_payload["options"]["num_ctx"],
             16384,
         )
+        # Thinking tokens share the generation budget; an undersized
+        # num_predict truncates hard scenes into empty message content.
+        self.assertEqual(
+            request_payload["options"]["num_predict"],
+            8192,
+        )
 
         encoded_image = request_payload["messages"][0]["images"][0]
 
