@@ -65,3 +65,28 @@ jobs:
 
       - name: Build package
         run: python -m build
+
+  cpp-safety:
+    name: C++ safety supervisor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure C++ safety supervisor
+        run: |
+          cmake \
+            -S cpp \
+            -B build/cpp \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DINSPECTRON_WARNINGS_AS_ERRORS=ON
+
+      - name: Build C++ safety supervisor
+        run: cmake --build build/cpp --config Release --parallel 2
+
+      - name: Run C++ safety tests
+        run: |
+          ctest \
+            --test-dir build/cpp \
