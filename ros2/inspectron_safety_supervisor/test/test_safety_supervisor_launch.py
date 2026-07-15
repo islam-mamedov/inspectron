@@ -106,8 +106,10 @@ class SafetySupervisorGraphTest(unittest.TestCase):
         self.publisher.publish(clear)
 
         clear_decision = self._wait_for_decision(
-            lambda decision: decision.evidence_id == clear.evidence_id
-            and decision.status == PolicyDecision.STATUS_VALID,
+            lambda decision: (
+                decision.evidence_id == clear.evidence_id
+                and decision.status == PolicyDecision.STATUS_VALID
+            ),
             "valid clear-scene decision",
         )
         self.assertEqual(clear_decision.action, PolicyDecision.ACTION_PROCEED)
@@ -125,8 +127,10 @@ class SafetySupervisorGraphTest(unittest.TestCase):
         self.publisher.publish(invalid)
 
         invalid_decision = self._wait_for_decision(
-            lambda decision: decision.evidence_id == invalid.evidence_id
-            and decision.status == PolicyDecision.STATUS_INVALID,
+            lambda decision: (
+                decision.evidence_id == invalid.evidence_id
+                and decision.status == PolicyDecision.STATUS_INVALID
+            ),
             "invalid-input stop decision",
         )
         self.assertEqual(invalid_decision.action, PolicyDecision.ACTION_STOP)
@@ -137,8 +141,10 @@ class SafetySupervisorGraphTest(unittest.TestCase):
         self.assertTrue(invalid_decision.model_action_overridden)
 
         stale_decision = self._wait_for_decision(
-            lambda decision: decision.evidence_id == invalid.evidence_id
-            and decision.status == PolicyDecision.STATUS_STALE,
+            lambda decision: (
+                decision.evidence_id == invalid.evidence_id
+                and decision.status == PolicyDecision.STATUS_STALE
+            ),
             "watchdog stop decision",
         )
         self.assertEqual(stale_decision.action, PolicyDecision.ACTION_STOP)
