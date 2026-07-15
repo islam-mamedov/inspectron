@@ -88,7 +88,9 @@ colcon build \
     -DCMAKE_BUILD_TYPE=Release \
     -DINSPECTRON_ROS_WARNINGS_AS_ERRORS=ON
 
-colcon test --packages-select inspectron_safety_supervisor
+colcon test \
+  --base-paths /path/to/inspectron/ros2 \
+  --packages-select inspectron_safety_supervisor
 colcon test-result --verbose
 ```
 
@@ -109,8 +111,9 @@ This milestone provides:
 - invalid-input rejection;
 - a steady-clock perception watchdog;
 - message conversion tests;
+- a graph-level launch test covering valid, invalid, and stale input;
 - launch and parameter configuration.
 
-The next milestone will add an integration test that exercises valid, invalid,
-and stale input through a running ROS graph, followed by a simulated robot
-controller that consumes the enforced decision.
+GitHub Actions builds and tests the package inside the ROS 2 Jazzy container, in
+addition to the existing Python and standalone C++ jobs. The next milestone is
+a simulated robot controller that consumes the enforced decision.

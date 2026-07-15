@@ -105,6 +105,7 @@ install(
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
 
   ament_add_gtest(
     test_message_conversion
@@ -124,6 +125,11 @@ if(BUILD_TESTING)
     )
     inspectron_enable_warnings(test_message_conversion)
   endif()
+
+  add_launch_test(
+    test/test_safety_supervisor_launch.py
+    TIMEOUT 30
+  )
 endif()
 
 ament_package()
