@@ -94,7 +94,7 @@ jobs:
             --output-on-failure
 
   ros2-safety:
-    name: ROS 2 safety supervisor
+    name: ROS 2 safety and motion control
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -116,7 +116,7 @@ jobs:
             ros-jazzy-ament-cmake-gtest \
             ros-jazzy-launch-testing-ament-cmake
 
-      - name: Build and test ROS 2 supervisor
+      - name: Build and test ROS 2 control stack
         run: |
           set -eo pipefail
           source /opt/ros/jazzy/setup.bash
@@ -126,14 +126,16 @@ jobs:
 
           colcon build \
             --base-paths "${GITHUB_WORKSPACE}/ros2" \
-            --packages-select inspectron_safety_supervisor \
+            --packages-up-to inspectron_motion_controller \
             --cmake-args \
               -DCMAKE_BUILD_TYPE=Release \
               -DINSPECTRON_ROS_WARNINGS_AS_ERRORS=ON
 
           colcon test \
             --base-paths "${GITHUB_WORKSPACE}/ros2" \
-            --packages-select inspectron_safety_supervisor \
+            --packages-select \
+              inspectron_safety_supervisor \
+              inspectron_motion_controller \
             --event-handlers console_direct+
 
           colcon test-result --verbose
