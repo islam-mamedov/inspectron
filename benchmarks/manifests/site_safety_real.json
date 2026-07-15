@@ -122,5 +122,636 @@
     "license_name": "CC BY 2.0",
     "license_url": "https://creativecommons.org/licenses/by/2.0/",
     "image_sha256": "52b9a9ed9e287d7147c8a38689d863f6942627d0c65141a48768e5e99d5e0a66"
+  },
+  {
+    "id": "clear_002",
+    "image": "clear/clear_002.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Interior of The Warehouse 01 aisles.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Interior_of_The_Warehouse_01_aisles.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Interior_of_The_Warehouse_01_aisles.jpg",
+    "author": "Panamitsu",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "983c17f2444bc671fbcfaf917273ce9e238abfab3c649e8f97c3f5793173780c"
+  },
+  {
+    "id": "clear_003",
+    "image": "clear/clear_003.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Vue de l'intérieur de l'entrepôt de Leclerc Drive Beynost (janvier 2024).JPG",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Vue_de_l%27int%C3%A9rieur_de_l%27entrep%C3%B4t_de_Leclerc_Drive_Beynost_(janvier_2024).JPG",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Vue_de_l%27int%C3%A9rieur_de_l%27entrep%C3%B4t_de_Leclerc_Drive_Beynost_%28janvier_2024%29.JPG",
+    "author": "Benoît Prieur",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "b0f55e5b0f166f8cb3cc000201f1c7bb375fe10791cdbaf6ca947f0956a0c1ac"
+  },
+  {
+    "id": "debris_002",
+    "image": "debris/debris_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Interior of a warehouse in Riga.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Interior_of_a_warehouse_in_Riga.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/1/13/Interior_of_a_warehouse_in_Riga.jpg",
+    "author": "Андрей Романенко",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "b2e9fc6cfbed0e1a987863b01fa5570e6984fe4406dc5f2f91cc5f46cf59d773"
+  },
+  {
+    "id": "human_002",
+    "image": "human_in_path/human_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:FDA Inspector 2824 (4494142291).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:FDA_Inspector_2824_(4494142291).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/2/20/FDA_Inspector_2824_%284494142291%29.jpg",
+    "author": "The U.S. Food and Drug Administration",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-FDA",
+    "image_sha256": "e6caa1c1c7fd6403b4007018280e2c24db82debaec356ab4a62f5d1d64cfb8c3"
+  },
+  {
+    "id": "unstable_load_002",
+    "image": "unstable_load/unstable_load_002.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris",
+      "human_in_path",
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:India-Truck-Overload.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:India-Truck-Overload.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/6/6a/India-Truck-Overload.jpg",
+    "author": "Peter Krimbacher",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "c6bb4a16ea2bb0ac4f7fddd2ccb8ce47e3433c016fe6c60de25f0a551e992f1b"
+  },
+  {
+    "id": "unstable_load_003",
+    "image": "unstable_load/unstable_load_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Overloaded Truck (10522133955).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Overloaded_Truck_(10522133955).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Overloaded_Truck_%2810522133955%29.jpg",
+    "author": "John Hoey",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "e1869172617fe11e88acefa4d6acf69530b23f303a3273a3a150b9431243d47c"
+  },
+  {
+    "id": "liquid_spill_002",
+    "image": "liquid_spill/liquid_spill_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Flooded road, Tamale.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Flooded_road,_Tamale.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d3/Flooded_road%2C_Tamale.jpg",
+    "author": "EST blueprint",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "8a03b1b9660b0c43e548939a9dd76be345b3c917b9b051e029c76e5eec906925"
+  },
+  {
+    "id": "debris_003",
+    "image": "debris/debris_003.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris",
+      "human_in_path",
+      "liquid_spill"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Flood eroded road.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Flood_eroded_road.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/05/Flood_eroded_road.jpg",
+    "author": "Obuezie",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "c2bc48f7ef43b192144284a09d7c3219380c29747847916d0af1d5c7dd1fd560"
+  },
+  {
+    "id": "debris_004",
+    "image": "debris/debris_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Lincoln St, Wellington flood aftermath, 20 Apr 2026.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Lincoln_St,_Wellington_flood_aftermath,_20_Apr_2026.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Lincoln_St%2C_Wellington_flood_aftermath%2C_20_Apr_2026.jpg",
+    "author": "Alan Tennyson",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4aa4a76c1cccd96939113864562e5a6f3863a736d4200597ff0d0c909ee42e3d"
+  },
+  {
+    "id": "open_edge_002",
+    "image": "open_edge/open_edge_002.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Sinkhole, Bolebrooke Road, Bexhill.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Sinkhole,_Bolebrooke_Road,_Bexhill.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Sinkhole%2C_Bolebrooke_Road%2C_Bexhill.jpg",
+    "author": "Alexis Markwick",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "c66a2a8c29ca86982d641932675c55f344344420fc5376b6486b6c08ed6c9915"
+  },
+  {
+    "id": "human_003",
+    "image": "human_in_path/human_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Site of the 2024 Kuala Lumpur sinkhole 06.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Site_of_the_2024_Kuala_Lumpur_sinkhole_06.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Site_of_the_2024_Kuala_Lumpur_sinkhole_06.jpg",
+    "author": "Ridiculopathy",
+    "license_name": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "image_sha256": "399e587c26b696afe8b74c0b33286494b0def479d4b4fc773d42e0e6b32970ac"
+  },
+  {
+    "id": "fire_or_smoke_002",
+    "image": "fire_or_smoke/fire_or_smoke_002.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Staged car fire 5.JPG",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Staged_car_fire_5.JPG",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Staged_car_fire_5.JPG",
+    "author": "Juliancolton",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+    "image_sha256": "2131f9bd1e12404938ce8f260f88bf1eedf82dccd8ac4276198610bbe9181ab0"
+  },
+  {
+    "id": "liquid_spill_003",
+    "image": "liquid_spill/liquid_spill_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Big puddle on the road from village Budy.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Big_puddle_on_the_road_from_village_Budy.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Big_puddle_on_the_road_from_village_Budy.jpg",
+    "author": "Nickispeaki",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f0103e784254d24f908f8d40dbcce6706498642811d0de24d69c83bfdbf300ef"
+  },
+  {
+    "id": "liquid_spill_004",
+    "image": "liquid_spill/liquid_spill_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Water puddle on the road.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Water_puddle_on_the_road.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/72/Water_puddle_on_the_road.jpg",
+    "author": "Akum20",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "83014c3b7c88cc4f7d4a3be24bcae15ad4ec4f7e3fc4b39d1ef916fdce480a35"
+  },
+  {
+    "id": "fire_or_smoke_003",
+    "image": "fire_or_smoke/fire_or_smoke_003.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris",
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:2025 Southern California fires and the United States Forest Service (USFS) - Eaton Fire Initial Attack (54263442283).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:2025_Southern_California_fires_and_the_United_States_Forest_Service_(USFS)_-_Eaton_Fire_Initial_Attack_(54263442283).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/91/2025_Southern_California_fires_and_the_United_States_Forest_Service_%28USFS%29_-_Eaton_Fire_Initial_Attack_%2854263442283%29.jpg",
+    "author": "Pacific Southwest Forest Service, USDA",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-USDA",
+    "image_sha256": "ba442c99aa2c2c160d5e07ba27c2100cbd854bce508bf9bc89b8fc1720d30cee"
+  },
+  {
+    "id": "fire_or_smoke_004",
+    "image": "fire_or_smoke/fire_or_smoke_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:House Fire in Hickory, Mississippi.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:House_Fire_in_Hickory,_Mississippi.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/e/e4/House_Fire_in_Hickory%2C_Mississippi.jpg",
+    "author": "Ktkvtsh",
+    "license_name": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "image_sha256": "be21b63bf84707b62f8ec96686e01d1b8c356986c3ad90233035ac259f1f75dc"
+  },
+  {
+    "id": "open_edge_003",
+    "image": "open_edge/open_edge_003.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:2023-04-22 Baugrube Tauberbischofsheim 5.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:2023-04-22_Baugrube_Tauberbischofsheim_5.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/2023-04-22_Baugrube_Tauberbischofsheim_5.jpg",
+    "author": "Triplec85",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4e470c341cf6f30899b4d333190a203a0818aa59cf965f612395afbb5a2cd182"
+  },
+  {
+    "id": "clear_004",
+    "image": "clear/clear_004.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Perth (AU), Elizabeth Quay Bridge -- 2019 -- 0252.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Perth_(AU),_Elizabeth_Quay_Bridge_--_2019_--_0252.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Perth_%28AU%29%2C_Elizabeth_Quay_Bridge_--_2019_--_0252.jpg",
+    "author": "Dietmar Rabich",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "ca3550e75fa38b6268bbafa1cbfec6843c0e90bce9800733381eb835c47b9b55"
+  },
+  {
+    "id": "clear_005",
+    "image": "clear/clear_005.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Aisle in a Chemist Warehouse store in Subiaco September 2025.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Aisle_in_a_Chemist_Warehouse_store_in_Subiaco_September_2025.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Aisle_in_a_Chemist_Warehouse_store_in_Subiaco_September_2025.jpg",
+    "author": "Nick-D",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "aa0f618b11cae805540be41ad2afb95b2243ab197b7fc54e72bf4c3b7210f596"
+  },
+  {
+    "id": "clear_006",
+    "image": "clear/clear_006.jpg",
+    "traversability": "clear",
+    "hazards": [],
+    "expected_action": "proceed",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Corridor at Redi empty of people on a morning in June 2022.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Corridor_at_Redi_empty_of_people_on_a_morning_in_June_2022.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Corridor_at_Redi_empty_of_people_on_a_morning_in_June_2022.jpg",
+    "author": "JIP",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "6071f1e8682d20c14bf85e25f2977d25b4a50616f280762e30da8a1db99d4444"
+  },
+  {
+    "id": "human_004",
+    "image": "human_in_path/human_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Gourock Railway Station concourse Mar 2019.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Gourock_Railway_Station_concourse_Mar_2019.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Gourock_Railway_Station_concourse_Mar_2019.jpg",
+    "author": "dave souza",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "7ea808be072c4dc56dfdda68d7cef36afe23d9e16b16fe58d678aaf7bd51f788"
+  },
+  {
+    "id": "human_005",
+    "image": "human_in_path/human_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Students on corridor in Viator High School.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Students_on_corridor_in_Viator_High_School.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Students_on_corridor_in_Viator_High_School.jpg",
+    "author": "Dquai",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "1216341c6a57b5a717856a99b4d0a7ab59967ec4c996c5c938646d7bc863bf3b"
+  },
+  {
+    "id": "human_006",
+    "image": "human_in_path/human_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:People walking in Parliament House, Helsinki.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:People_walking_in_Parliament_House,_Helsinki.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/80/People_walking_in_Parliament_House%2C_Helsinki.jpg",
+    "author": "Zache",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "8f69d548ba3aa203e07bad2ddd45762cd32b6a0a1c9eafaddd8d79436547d12a"
+  },
+  {
+    "id": "debris_005",
+    "image": "debris/debris_005.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "reroute",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Hurricane Sandy downed tree Kutztown PA.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Hurricane_Sandy_downed_tree_Kutztown_PA.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Hurricane_Sandy_downed_tree_Kutztown_PA.jpg",
+    "author": "Dough4872",
+    "license_name": "Public Domain",
+    "license_url": "https://commons.wikimedia.org/wiki/Template:PD-self",
+    "image_sha256": "ebea4c418cc325970544b133aebdef73371750406194fa3b9feb40ed95aa6977"
+  },
+  {
+    "id": "debris_006",
+    "image": "debris/debris_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "debris"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Dead Tree across Highgrove Road; Spring Hill, FL; Sept 2024-03.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Dead_Tree_across_Highgrove_Road;_Spring_Hill,_FL;_Sept_2024-03.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Dead_Tree_across_Highgrove_Road%3B_Spring_Hill%2C_FL%3B_Sept_2024-03.jpg",
+    "author": "DanTD",
+    "license_name": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "image_sha256": "a83efcb2aea209bc817deab0ca9177016c27aba5289e6e5c85815dfaec4b3768"
+  },
+  {
+    "id": "liquid_spill_005",
+    "image": "liquid_spill/liquid_spill_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:A photo of a water leak on Camberwell Place 2022-10-08 1.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_1.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/4/43/A_photo_of_a_water_leak_on_Camberwell_Place_2022-10-08_1.jpg",
+    "author": "Thomas Booker (CoderThomasB)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "748b3c1f2fd571b54a87d1ca8c30d4a3d11b2410774f9cebbf9cf915512f9317"
+  },
+  {
+    "id": "liquid_spill_006",
+    "image": "liquid_spill/liquid_spill_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "liquid_spill"
+    ],
+    "expected_action": "slow_down",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Wellington station bus interchange wet floor signs 02.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Wellington_station_bus_interchange_wet_floor_signs_02.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/Wellington_station_bus_interchange_wet_floor_signs_02.jpg",
+    "author": "Panamitsu",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "4e42e8290b31a2c8e4b76be7d8028c1c88d873e19e1131dcb82ae3a301aa28a1"
+  },
+  {
+    "id": "open_edge_004",
+    "image": "open_edge/open_edge_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Maputo Railway Station platform view.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Maputo_Railway_Station_platform_view.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Maputo_Railway_Station_platform_view.jpg",
+    "author": "Claus Wonnemann (Chwonn)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "88c3cd0cf77ced412bf74bf3d17ca986d53dd7e443fc53322467c590a911a5f6"
+  },
+  {
+    "id": "open_edge_005",
+    "image": "open_edge/open_edge_005.jpg",
+    "traversability": "blocked",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Whitstable Harbour Quayside 8123.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Whitstable_Harbour_Quayside_8123.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/71/Whitstable_Harbour_Quayside_8123.jpg",
+    "author": "ClemRutter",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "149ea37e8263fadde41f3688893bc687045def13e1372bd7ee03cc12b2f0e86e"
+  },
+  {
+    "id": "open_edge_006",
+    "image": "open_edge/open_edge_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "open_edge"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Platform no.2 of Eluru Railway station (01).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Platform_no.2_of_Eluru_Railway_station_(01).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Platform_no.2_of_Eluru_Railway_station_%2801%29.jpg",
+    "author": "iMahesh (IM3847)",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f0a1a9d863e22461905ad7ae046e3dfcc5d1f920ecc15912291383e3c9615c85"
+  },
+  {
+    "id": "fire_or_smoke_005",
+    "image": "fire_or_smoke/fire_or_smoke_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Fire crews in Cache La Poudre Canyon at the High Park Wildfire.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Fire_crews_in_Cache_La_Poudre_Canyon_at_the_High_Park_Wildfire.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/0/00/Fire_crews_in_Cache_La_Poudre_Canyon_at_the_High_Park_Wildfire.jpg",
+    "author": "U.S. Department of Agriculture",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "14baa337f7d4b1b9ca05a7a2b6262d6d65d91f5fbaebf1c2e8e58d20ed7d83a4"
+  },
+  {
+    "id": "fire_or_smoke_006",
+    "image": "fire_or_smoke/fire_or_smoke_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "fire_or_smoke",
+      "human_in_path"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:SV-RTL Firefighting (16685391802).jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:SV-RTL_Firefighting_(16685391802).jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/SV-RTL_Firefighting_%2816685391802%29.jpg",
+    "author": "Kecko",
+    "license_name": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "image_sha256": "0f0e6d0864d5e03987c75c5ea3dfeac5f96ed2ecc52cced47288b3780cc34b31"
+  },
+  {
+    "id": "unstable_load_004",
+    "image": "unstable_load/unstable_load_004.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "human_in_path",
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:An overloaded vehicle at Sabon Sarki.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:An_overloaded_vehicle_at_Sabon_Sarki.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/2/2f/An_overloaded_vehicle_at_Sabon_Sarki.jpg",
+    "author": "Kambai Akau",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "26d0c291ac5842cd28bc1fb250742cb11828b000cf3a808bf225a6f566d8cf4c"
+  },
+  {
+    "id": "unstable_load_005",
+    "image": "unstable_load/unstable_load_005.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:Chargement de sacs de nourriture sur la route de Tillaberi au Niger.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:Chargement_de_sacs_de_nourriture_sur_la_route_de_Tillaberi_au_Niger.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Chargement_de_sacs_de_nourriture_sur_la_route_de_Tillaberi_au_Niger.jpg",
+    "author": "GilesBraun",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "63d5b3e557a0baba9699f33ba3e8c3620196e51895588cfba7ea214184e5ff5f"
+  },
+  {
+    "id": "unstable_load_006",
+    "image": "unstable_load/unstable_load_006.jpg",
+    "traversability": "restricted",
+    "hazards": [
+      "unstable_load"
+    ],
+    "expected_action": "stop",
+    "split": "benchmark",
+    "source_dataset": "Wikimedia Commons",
+    "source_id": "File:504 de transport surchargé.jpg",
+    "source_page_url": "https://commons.wikimedia.org/wiki/File:504_de_transport_surcharg%C3%A9.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/504_de_transport_surcharg%C3%A9.jpg",
+    "author": "Cyriac Gbogou",
+    "license_name": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "image_sha256": "f3012b8a6800210daa19eeba240a2d9fc1c608f8445ead87633b8b188b18ffb6"
   }
 ]

@@ -180,42 +180,64 @@ The example manifest defines the expected format but does not include benchmark 
 
 The real-image benchmark — label taxonomy, licensing rules, provenance requirements, and the candidate review log — is documented in [benchmarks/DATASET.md](benchmarks/DATASET.md).
 
-### Seven-scene real-image pilot
+### 42-scene real-image benchmark results
 
-A provenance-validated pilot was run on seven original-resolution images: one clear scene and one example for each supported hazard class.
+The complete benchmark — 42 provenance-verified images, six per scene group,
+labels frozen before inference — was evaluated with one single pass and a
+three-run repeated evaluation (126 inference calls in total).
 
 | Metric | Result |
 |---|---:|
-| Successful inference | 21/21 across 3 runs |
-| Traversability accuracy | 85.7% |
-| Hazard exact match | 85.7% |
-| Hazard micro F1 | 90.9% |
-| Model action accuracy | 85.7% |
-| Safety-enforced action accuracy | 85.7% |
-| Unsafe-motion decisions | 0 |
+| Successful inference | 126/126 across 3 runs |
+| Safety-enforced action accuracy | 90.5% (38/42) |
+| Hazard micro precision / recall / F1 | 90.5% / 80.9% / 85.4% |
+| Hazard exact-set match | 73.8% |
+| Traversability accuracy | 64.3% |
+| Policy override rate | 0.0% |
+| Unsafe-motion decisions | 2 of 42 |
 | Mean prediction agreement | 100.0% |
-| Fully stable scenes | 7/7 |
-| Mean on-device latency | 31.77 seconds/image |
-| Run-mean latency population std. | 13.39 seconds |
+| Fully stable scenes | 42/42 |
+| Mean on-device latency | 54.5 seconds/image (±0.18 across runs) |
 
-All seven scenes produced the same joint prediction in all three runs. The model
-correctly handled six scenes. On `unstable_load_001`, it consistently classified
-the route as blocked but omitted the critical `unstable_load` hazard, producing
-`reroute` instead of the expected `stop` at confidence `1.0`. The deterministic
-policy could not repair the miss because the predicted assessment was internally
-consistent. This illustrates the system boundary: enforcement can constrain
-recognized hazards but cannot recover a hazard omitted by perception.
+Three runs at temperature 0 produced identical joint predictions for every
+scene, so every failure below is reliably reproducible rather than sampling
+noise.
 
-Output stability did not imply latency stability. The first run averaged 50.71
-seconds/image, while the two warm runs averaged 22.36 and 22.24 seconds/image.
-This pilot therefore separates deterministic prediction behavior from a substantial
-cold-start or warm-cache runtime effect.
+![Per-class hazard detection](docs/results/per_class_hazard_metrics.svg)
 
-These results are preliminary because the pilot contains only one image per scene group. Labels were finalized before inference and were not changed after results were observed.
+The headline findings are about the *boundary* of the architecture:
 
-See the [full analysis](docs/results/site_safety_pilot_7.md), the
-[single-run report](docs/results/site_safety_pilot_7.json), and the
-[three-run machine-readable report](docs/results/site_safety_pilot_7_repeated_3.json).
+- **Enforcement bounds inconsistency, not ignorance.** The policy override
+  rate was 0.0%: the model was internally self-consistent on all 42 scenes,
+  so both unsafe motions came from hazards the model never perceived — a
+  railway platform edge read as a completely clear corridor at confidence
+  1.0, and a second platform edge read as minor debris. When perception
+  omits a hazard outright, output-side enforcement is structurally blind;
+  the residual risk is a perception-recall problem, not a control problem.
+- **Model confidence is inverted as a safety signal.** Scenes reported at
+  confidence 1.0 were the least accurate bin (66.7%), while 0.95 scenes
+  were flawless (26/26); wrong answers averaged higher confidence than
+  correct ones.
+
+![Confidence calibration](docs/results/confidence_calibration.svg)
+
+- **Failures are class-specific, not diffuse.** Liquid spills and fire
+  scored perfect precision and recall; the misses concentrate in platform
+  edges and unstable loads (recall 0.67 each) and in people standing near
+  vehicles or equipment (`human_in_path` recall 0.71 — the model omitted
+  firefighters in three fire scenes while catching every human who was the
+  primary subject).
+- The pilot's stable failure (`unstable_load_001`, reroute instead of stop
+  at confidence 1.0) reproduced identically for the third consecutive run
+  set.
+
+Full analysis including the traversability confusion matrix, per-scene
+table, calibration bins, and a disclosed generation-budget fix:
+[docs/results/site_safety_42.md](docs/results/site_safety_42.md), with the
+machine-readable three-run report in
+[docs/results/site_safety_42_repeated_3.json](docs/results/site_safety_42_repeated_3.json).
+The earlier seven-scene pilot is preserved in
+[docs/results/site_safety_pilot_7.md](docs/results/site_safety_pilot_7.md).
 
 ## Testing
 
@@ -248,8 +270,8 @@ src/inspectron/
 
 - Robot execution is currently simulated.
 - Third-party benchmark images are not committed; they are reconstructed from provenance-pinned download URLs and SHA-256 hashes.
-- The real-image benchmark currently contains only seven pilot images, so reported metrics are preliminary.
-- VLM confidence values are model-generated and are not yet calibrated.
+- The real-image benchmark contains 42 scenes with one image per scene, so per-class rates carry wide confidence intervals and no statistical representativeness is claimed.
+- VLM confidence values are measurably miscalibrated (the highest-confidence bin is the least accurate); they are treated only as a weak-evidence trigger, never as permission.
 - The rerouting policy selects another required waypoint but does not yet use a geometric path planner.
 - The system is a research prototype and is not safety-certified.
 
