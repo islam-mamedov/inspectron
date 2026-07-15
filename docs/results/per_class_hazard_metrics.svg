@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="Helvetica,Arial,sans-serif">
+<rect width="760" height="380" fill="white"/>
+<text x="380.0" y="26" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1e23">Per-class hazard detection (42 scenes, identical across 3 runs)</text>
+<line x1="60" y1="316.0" x2="740" y2="316.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="320.0" text-anchor="end" font-size="11" fill="#5a6470">0.0</text>
+<line x1="60" y1="264.0" x2="740" y2="264.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="268.0" text-anchor="end" font-size="11" fill="#5a6470">0.2</text>
+<line x1="60" y1="212.0" x2="740" y2="212.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="216.0" text-anchor="end" font-size="11" fill="#5a6470">0.4</text>
+<line x1="60" y1="160.0" x2="740" y2="160.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="164.0" text-anchor="end" font-size="11" fill="#5a6470">0.6</text>
+<line x1="60" y1="108.0" x2="740" y2="108.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="112.0" text-anchor="end" font-size="11" fill="#5a6470">0.8</text>
+<line x1="60" y1="56.0" x2="740" y2="56.0" stroke="#e3e6e9" stroke-width="1"/>
+<text x="52" y="60.0" text-anchor="end" font-size="11" fill="#5a6470">1.0</text>
+<rect x="80.4" y="56.0" width="33.3" height="260.0" fill="#4a7ab5" rx="2"/>
+<text x="97.0" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<rect x="116.7" y="56.0" width="33.3" height="260.0" fill="#e0a52e" rx="2"/>
+<text x="133.3" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<text x="116.7" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">liquid_spill</text>
+<rect x="193.7" y="56.0" width="33.3" height="260.0" fill="#4a7ab5" rx="2"/>
+<text x="210.4" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<rect x="230.0" y="56.0" width="33.3" height="260.0" fill="#e0a52e" rx="2"/>
+<text x="246.6" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<text x="230.0" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">fire_or_smoke</text>
+<rect x="307.1" y="134.0" width="33.3" height="182.0" fill="#4a7ab5" rx="2"/>
+<text x="323.7" y="129.0" text-anchor="middle" font-size="10" fill="#1a1e23">0.70</text>
+<rect x="343.3" y="87.2" width="33.3" height="228.8" fill="#e0a52e" rx="2"/>
+<text x="360.0" y="82.2" text-anchor="middle" font-size="10" fill="#1a1e23">0.88</text>
+<text x="343.3" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">debris</text>
+<rect x="420.4" y="79.4" width="33.3" height="236.6" fill="#4a7ab5" rx="2"/>
+<text x="437.0" y="74.4" text-anchor="middle" font-size="10" fill="#1a1e23">0.91</text>
+<rect x="456.7" y="131.4" width="33.3" height="184.6" fill="#e0a52e" rx="2"/>
+<text x="473.3" y="126.4" text-anchor="middle" font-size="10" fill="#1a1e23">0.71</text>
+<text x="456.7" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">human_in_path</text>
+<rect x="533.7" y="56.0" width="33.3" height="260.0" fill="#4a7ab5" rx="2"/>
+<text x="550.4" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<rect x="570.0" y="141.8" width="33.3" height="174.2" fill="#e0a52e" rx="2"/>
+<text x="586.6" y="136.8" text-anchor="middle" font-size="10" fill="#1a1e23">0.67</text>
+<text x="570.0" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">open_edge</text>
+<rect x="647.1" y="56.0" width="33.3" height="260.0" fill="#4a7ab5" rx="2"/>
+<text x="663.7" y="51.0" text-anchor="middle" font-size="10" fill="#1a1e23">1.00</text>
+<rect x="683.3" y="141.8" width="33.3" height="174.2" fill="#e0a52e" rx="2"/>
+<text x="700.0" y="136.8" text-anchor="middle" font-size="10" fill="#1a1e23">0.67</text>
+<text x="683.3" y="332" text-anchor="middle" font-size="11" fill="#1a1e23">unstable_load</text>
+<rect x="60" y="354" width="12" height="12" fill="#4a7ab5" rx="2"/>
+<text x="77" y="364" font-size="11" fill="#1a1e23">precision</text>
+<rect x="164" y="354" width="12" height="12" fill="#e0a52e" rx="2"/>
+<text x="181" y="364" font-size="11" fill="#1a1e23">recall</text>
+</svg>
