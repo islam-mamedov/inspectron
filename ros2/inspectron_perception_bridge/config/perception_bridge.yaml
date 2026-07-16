@@ -1,0 +1,12 @@
+perception_bridge:
+  ros__parameters:
+    provider: ollama
+    base_url: http://localhost:11434
+    model: qwen3-vl:8b
+    api_key_environment_variable: INSPECTRON_VLM_API_KEY
+    timeout_seconds: 180.0
+    max_image_bytes: 26214400
+    num_ctx: 16384
+    default_waypoint: unknown_waypoint
+    scene_id: live_robot_camera
+    fixture_response_json: ""

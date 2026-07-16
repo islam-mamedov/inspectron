@@ -94,7 +94,7 @@ jobs:
             --output-on-failure
 
   ros2-safety:
-    name: ROS 2 safety and motion control
+    name: ROS 2 perception and control stack
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -114,9 +114,10 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             ros-jazzy-ament-cmake-gtest \
+            ros-jazzy-ament-cmake-pytest \
             ros-jazzy-launch-testing-ament-cmake
 
-      - name: Build and test ROS 2 control stack
+      - name: Build and test ROS 2 perception and control stack
         run: |
           set -eo pipefail
           source /opt/ros/jazzy/setup.bash
@@ -126,7 +127,9 @@ jobs:
 
           colcon build \
             --base-paths "${GITHUB_WORKSPACE}/ros2" \
-            --packages-up-to inspectron_motion_controller \
+            --packages-up-to \
+              inspectron_motion_controller \
+              inspectron_perception_bridge \
             --cmake-args \
               -DCMAKE_BUILD_TYPE=Release \
               -DINSPECTRON_ROS_WARNINGS_AS_ERRORS=ON
@@ -136,6 +139,7 @@ jobs:
             --packages-select \
               inspectron_safety_supervisor \
               inspectron_motion_controller \
+              inspectron_perception_bridge \
             --event-handlers console_direct+
 
           colcon test-result --verbose
