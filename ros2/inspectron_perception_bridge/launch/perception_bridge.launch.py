@@ -1,0 +1,22 @@
+from pathlib import Path
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    package_share = Path(get_package_share_directory("inspectron_perception_bridge"))
+    parameters = package_share / "config" / "perception_bridge.yaml"
+
+    return LaunchDescription(
+        [
+            Node(
+                package="inspectron_perception_bridge",
+                executable="perception_bridge_node",
+                name="perception_bridge",
+                output="screen",
+                parameters=[str(parameters)],
+            )
+        ]
+    )
