@@ -72,4 +72,4 @@ The implementation includes:
 - ROS graph integration tests;
 - clean-shutdown validation.
 
-The complete ROS 2 stack passes 27 tests.
+The perception bridge is included in the repository-wide ROS 2 integration test job.

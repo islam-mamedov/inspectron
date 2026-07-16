@@ -1,0 +1,9 @@
+mission_orchestrator:
+  ros__parameters:
+    waypoints:
+      - aisle_a
+      - aisle_b
+      - aisle_c
+    policy_timeout_ms: 750
+    reroute_timeout_ms: 5000
+    watchdog_rate_hz: 20.0

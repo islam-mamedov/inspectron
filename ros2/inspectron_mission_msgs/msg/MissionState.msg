@@ -1,0 +1,20 @@
+uint8 STATE_IDLE=0
+uint8 STATE_WAITING_FOR_POLICY=1
+uint8 STATE_MOVING=2
+uint8 STATE_PAUSED=3
+uint8 STATE_INSPECTING_CLOSER=4
+uint8 STATE_REROUTING=5
+uint8 STATE_SAFETY_STOPPED=6
+uint8 STATE_COMPLETED=7
+uint8 STATE_ABORTED=8
+uint8 STATE_EMERGENCY_STOPPED=9
+
+uint8 state
+string current_waypoint
+string active_goal
+uint32 waypoint_index
+uint32 waypoint_count
+string last_evidence_id
+string reason
+bool motion_authorized
+builtin_interfaces/Time updated_at
