@@ -8,9 +8,14 @@ import launch
 import launch_ros.actions
 import launch_testing.actions
 import rclpy
+from inspectron_evidence_msgs.msg import EvidenceCapture
 from inspectron_safety_supervisor.msg import SceneAssessment
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage
+
+CAMERA_TOPIC = "/test/perception_bridge/camera/compressed"
+ASSESSMENT_TOPIC = "/test/perception_bridge/scene_assessment"
+EVIDENCE_TOPIC = "/test/perception_bridge/evidence_capture"
 
 
 def generate_test_description():
@@ -40,6 +45,11 @@ def generate_test_description():
                 "max_image_bytes": 1024,
             }
         ],
+        remappings=[
+            ("/inspectron/camera/compressed", CAMERA_TOPIC),
+            ("/inspectron/scene_assessment", ASSESSMENT_TOPIC),
+            ("/inspectron/evidence_capture", EVIDENCE_TOPIC),
+        ],
     )
 
     return launch.LaunchDescription(
@@ -62,16 +72,23 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
     def setUp(self):
         self.node = rclpy.create_node("perception_bridge_graph_test")
         self.assessments = []
+        self.evidence_captures = []
 
         self.image_publisher = self.node.create_publisher(
             CompressedImage,
-            "/inspectron/camera/compressed",
+            CAMERA_TOPIC,
             qos_profile_sensor_data,
         )
         self.assessment_subscription = self.node.create_subscription(
             SceneAssessment,
-            "/inspectron/scene_assessment",
+            ASSESSMENT_TOPIC,
             self.assessments.append,
+            10,
+        )
+        self.evidence_subscription = self.node.create_subscription(
+            EvidenceCapture,
+            EVIDENCE_TOPIC,
+            self.evidence_captures.append,
             10,
         )
 
@@ -79,6 +96,7 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
             lambda: (
                 self.image_publisher.get_subscription_count() > 0
                 and self.assessment_subscription.get_publisher_count() > 0
+                and self.evidence_subscription.get_publisher_count() > 0
             ),
             timeout_seconds=5.0,
             failure_message=("perception bridge graph was not discovered"),
@@ -86,6 +104,7 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
 
     def tearDown(self):
         self.node.destroy_subscription(self.assessment_subscription)
+        self.node.destroy_subscription(self.evidence_subscription)
         self.node.destroy_publisher(self.image_publisher)
         self.node.destroy_node()
 
@@ -159,6 +178,33 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
         self.assertEqual(valid_assessment.confidence, 0.95)
         self.assertEqual(valid_assessment.view_quality, 0.90)
         self.assertTrue(valid_assessment.evidence_id.startswith("aisle_a-"))
+
+        self._wait_until(
+            lambda: any(
+                capture.evidence_id == valid_assessment.evidence_id
+                for capture in self.evidence_captures
+            ),
+            timeout_seconds=5.0,
+            failure_message=("matching evidence capture was not published"),
+        )
+
+        valid_capture = next(
+            capture
+            for capture in self.evidence_captures
+            if capture.evidence_id == valid_assessment.evidence_id
+        )
+
+        self.assertEqual(valid_capture.waypoint, "aisle_a")
+        self.assertEqual(valid_capture.scene_id, "test_scene")
+        self.assertEqual(
+            valid_capture.image.header.frame_id,
+            "aisle_a",
+        )
+        self.assertEqual(valid_capture.image.format, "jpeg")
+        self.assertEqual(
+            bytes(valid_capture.image.data),
+            b"\xff\xd8\xff\xd9",
+        )
 
         invalid_image = CompressedImage()
         invalid_image.header.frame_id = "aisle_b"

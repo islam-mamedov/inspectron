@@ -94,7 +94,7 @@ jobs:
             --output-on-failure
 
   ros2-safety:
-    name: ROS 2 perception, mission, and control stack
+    name: ROS 2 perception, evidence, mission, and control stack
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -117,7 +117,7 @@ jobs:
             ros-jazzy-ament-cmake-pytest \
             ros-jazzy-launch-testing-ament-cmake
 
-      - name: Build and test ROS 2 perception, mission, and control stack
+      - name: Build and test ROS 2 perception, evidence, mission, and control stack
         run: |
           set -eo pipefail
           source /opt/ros/jazzy/setup.bash
@@ -131,6 +131,7 @@ jobs:
               inspectron_motion_controller \
               inspectron_perception_bridge \
               inspectron_mission_orchestrator \
+              inspectron_evidence_reporter \
             --cmake-args \
               -DCMAKE_BUILD_TYPE=Release \
               -DINSPECTRON_ROS_WARNINGS_AS_ERRORS=ON
@@ -142,6 +143,7 @@ jobs:
               inspectron_motion_controller \
               inspectron_perception_bridge \
               inspectron_mission_orchestrator \
+              inspectron_evidence_reporter \
             --event-handlers console_direct+
 
           colcon test-result --verbose

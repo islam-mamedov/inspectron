@@ -1,28 +1,24 @@
 cmake_minimum_required(VERSION 3.16)
-project(inspectron_perception_bridge)
+project(inspectron_evidence_reporter)
 
 option(
   INSPECTRON_ROS_WARNINGS_AS_ERRORS
-  "Accepted for consistency with the ROS 2 control-stack build"
+  "Accepted for consistency with the Inspectron ROS 2 stack"
   OFF
 )
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(inspectron_evidence_msgs REQUIRED)
+find_package(inspectron_mission_msgs REQUIRED)
 find_package(inspectron_safety_supervisor REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(sensor_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
-ament_python_install_package(inspectron_perception_bridge)
-
-ament_python_install_package(
-  inspectron
-  PACKAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../src/inspectron"
-)
+ament_python_install_package(inspectron_evidence_reporter)
 
 install(
-  PROGRAMS scripts/perception_bridge_node
+  PROGRAMS scripts/evidence_reporter_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -36,14 +32,14 @@ if(BUILD_TESTING)
   find_package(launch_testing_ament_cmake REQUIRED)
 
   ament_add_pytest_test(
-    test_conversion
-    test/test_conversion.py
+    test_reporting
+    test/test_reporting.py
     TIMEOUT 60
   )
 
   add_launch_test(
-    test/test_perception_bridge_launch.py
-    TIMEOUT 30
+    test/test_evidence_reporter_launch.py
+    TIMEOUT 40
   )
 endif()
 
