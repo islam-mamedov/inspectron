@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>inspectron_e2e_simulation</name>
+  <version>0.1.0</version>
+  <description>
+    Deterministic offline end-to-end simulation and launch tests for the
+    complete Inspectron ROS 2 pipeline.
+  </description>
+
+  <maintainer email="203401856+islam-mamedov@users.noreply.github.com">
+    Islam Mamedov
+  </maintainer>
+
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>geometry_msgs</depend>
+  <depend>inspectron_evidence_msgs</depend>
+  <depend>inspectron_mission_msgs</depend>
+  <depend>inspectron_safety_supervisor</depend>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+
+  <exec_depend>inspectron_evidence_reporter</exec_depend>
+  <exec_depend>inspectron_mission_orchestrator</exec_depend>
+  <exec_depend>inspectron_motion_controller</exec_depend>
+  <exec_depend>inspectron_perception_bridge</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
