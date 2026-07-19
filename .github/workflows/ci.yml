@@ -132,6 +132,7 @@ jobs:
               inspectron_perception_bridge \
               inspectron_mission_orchestrator \
               inspectron_evidence_reporter \
+              inspectron_e2e_simulation \
             --cmake-args \
               -DCMAKE_BUILD_TYPE=Release \
               -DINSPECTRON_ROS_WARNINGS_AS_ERRORS=ON
@@ -144,6 +145,7 @@ jobs:
               inspectron_perception_bridge \
               inspectron_mission_orchestrator \
               inspectron_evidence_reporter \
+              inspectron_e2e_simulation \
             --event-handlers console_direct+
 
           colcon test-result --verbose
