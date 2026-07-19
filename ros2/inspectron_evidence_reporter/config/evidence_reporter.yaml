@@ -1,0 +1,7 @@
+evidence_reporter:
+  ros__parameters:
+    output_directory: ~/.local/share/inspectron/reports
+    max_image_bytes: 12582912
+    auto_finalize: true
+    write_partial_report: true
+    finalize_delay_ms: 250

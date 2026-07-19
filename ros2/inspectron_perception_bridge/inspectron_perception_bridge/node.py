@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import rclpy
+from inspectron_evidence_msgs.msg import EvidenceCapture
 from inspectron_safety_supervisor.msg import SceneAssessment as SceneAssessmentMessage
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
@@ -130,6 +131,11 @@ class PerceptionBridgeNode(Node):
         self._assessment_publisher = self.create_publisher(
             SceneAssessmentMessage,
             "/inspectron/scene_assessment",
+            assessment_qos,
+        )
+        self._evidence_publisher = self.create_publisher(
+            EvidenceCapture,
+            "/inspectron/evidence_capture",
             assessment_qos,
         )
 
@@ -270,6 +276,36 @@ class PerceptionBridgeNode(Node):
                 "Dropped camera frame because VLM inference "
                 f"is still active: evidence_id={evidence_id}"
             )
+            return
+
+        self._publish_evidence(
+            job=job,
+            image_format=message.format,
+            stamp=stamp,
+        )
+
+    def _publish_evidence(
+        self,
+        *,
+        job: _FrameJob,
+        image_format: str,
+        stamp,
+    ) -> None:
+        capture = EvidenceCapture()
+        capture.evidence_id = job.evidence_id
+        capture.waypoint = job.waypoint
+        capture.scene_id = job.scene_id
+        capture.view_index = job.view_index
+        capture.image.header.stamp = stamp
+        capture.image.header.frame_id = job.waypoint
+        capture.image.format = image_format
+        capture.image.data = job.image_data
+
+        self._evidence_publisher.publish(capture)
+
+        self.get_logger().info(
+            f"Published immutable evidence capture evidence_id={job.evidence_id}"
+        )
 
     def _worker_loop(self) -> None:
         while not self._stop_event.is_set():

@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>inspectron_perception_bridge</name>
+  <name>inspectron_evidence_reporter</name>
   <version>0.1.0</version>
   <description>
-    ROS 2 bridge from compressed camera images to Inspectron scene assessments.
+    Immutable evidence storage and final mission reporting for Inspectron.
   </description>
 
   <maintainer email="203401856+islam-mamedov@users.noreply.github.com">
@@ -16,9 +16,10 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>inspectron_evidence_msgs</depend>
+  <depend>inspectron_mission_msgs</depend>
   <depend>inspectron_safety_supervisor</depend>
   <depend>rclpy</depend>
-  <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
 
   <exec_depend>launch_ros</exec_depend>
 

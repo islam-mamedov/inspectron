@@ -9,10 +9,15 @@ supervisor.
 | Direction | Topic | Type |
 |---|---|---|
 | Input | `/inspectron/camera/compressed` | `sensor_msgs/msg/CompressedImage` |
+| Output | `/inspectron/evidence_capture` | `inspectron_evidence_msgs/msg/EvidenceCapture` |
 | Output | `/inspectron/scene_assessment` | `inspectron_safety_supervisor/msg/SceneAssessment` |
 
-The camera frame ID is used as the waypoint. Each assessment receives a unique
+The camera frame ID is used as the waypoint. Each frame receives a unique
 evidence ID derived from the waypoint, image timestamp, and frame sequence.
+After a valid image enters the inference queue, the bridge publishes an
+`EvidenceCapture` containing the original compressed bytes and the same
+metadata and evidence ID used by the resulting assessment. Invalid or dropped
+frames do not create evidence captures.
 
 ## Providers
 
