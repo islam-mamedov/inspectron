@@ -220,17 +220,12 @@ prefix (`/test/e2e_safe/...`, `/test/e2e_hazard/...`) and add per-scenario node
 name suffixes, so the simulation cannot consume from or publish into any other
 test, in either direction.
 
-## Known teardown noise
+## Clean shutdown
 
-At shutdown, launch may log
-`[ERROR] [mission_orchestrator_node-*]: process has died [... exit code 1 ...]`
-with a traceback from `node.cancel_publisher.publish(...)`. This is
-pre-existing teardown behavior of the orchestrator's `main()` under SIGINT
-(rclpy raises `ExternalShutdownException`, which it does not catch, and the
-`finally` block then publishes on an invalid context). It does not affect any
-scenario assertion; the motion controller's watchdogs make the missed courtesy
-`cancel_motion` publish irrelevant. The tests assert a clean exit (code 0) for
-the scenario simulator only.
+The mission orchestrator handles both `KeyboardInterrupt` and
+`ExternalShutdownException`. It publishes the courtesy `cancel_motion` message
+only while the ROS context remains valid, then destroys the node and shuts down
+the context safely. Its launch test verifies a clean process exit with code 0.
 
 ## Limitations and the simulation/hardware boundary
 

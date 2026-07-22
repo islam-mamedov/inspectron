@@ -6,6 +6,7 @@ import unittest
 import launch
 import launch_ros.actions
 import launch_testing.actions
+import launch_testing.asserts
 import rclpy
 from inspectron_mission_msgs.msg import MissionState
 from inspectron_safety_supervisor.msg import PolicyDecision
@@ -228,6 +229,16 @@ class MissionOrchestratorGraphTest(unittest.TestCase):
         self.assertEqual(completed.waypoint_index, 2)
         self.assertEqual(completed.waypoint_count, 2)
         self.assertFalse(completed.motion_authorized)
+
+
+@launch_testing.post_shutdown_test()
+class MissionOrchestratorShutdownTest(unittest.TestCase):
+    def test_orchestrator_exits_cleanly(self, proc_info):
+        launch_testing.asserts.assertExitCodes(
+            proc_info,
+            allowable_exit_codes=[0],
+            process="mission_orchestrator_node",
+        )
 
 
 if __name__ == "__main__":
