@@ -11,6 +11,7 @@ from inspectron_evidence_msgs.msg import EvidenceCapture, ReportStatus
 from inspectron_mission_msgs.msg import MissionState
 from inspectron_safety_supervisor.msg import PolicyDecision, SceneAssessment
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from std_msgs.msg import Bool
 from std_srvs.srv import Trigger
 
 from inspectron_e2e_simulation.pipeline import remapped_name
@@ -90,6 +91,12 @@ class PipelineTestHarness:
             volatile,
         )
 
+        self.emergency_stop_publisher = self.node.create_publisher(
+            Bool,
+            self._name("/inspectron/emergency_stop"),
+            10,
+        )
+
         self.start_client = self.node.create_client(
             Trigger,
             self._name("/inspectron/mission/start"),
@@ -97,6 +104,10 @@ class PipelineTestHarness:
         self.abort_client = self.node.create_client(
             Trigger,
             self._name("/inspectron/mission/abort"),
+        )
+        self.reset_client = self.node.create_client(
+            Trigger,
+            self._name("/inspectron/mission/reset"),
         )
 
     def _name(self, name: str) -> str:
@@ -129,6 +140,8 @@ class PipelineTestHarness:
     def destroy(self) -> None:
         self.node.destroy_client(self.start_client)
         self.node.destroy_client(self.abort_client)
+        self.node.destroy_client(self.reset_client)
+        self.node.destroy_publisher(self.emergency_stop_publisher)
         self.node.destroy_subscription(self.state_subscription)
         self.node.destroy_subscription(self.policy_subscription)
         self.node.destroy_subscription(self.report_subscription)
@@ -160,6 +173,7 @@ class PipelineTestHarness:
             lambda: (
                 self.start_client.service_is_ready()
                 and self.abort_client.service_is_ready()
+                and self.reset_client.service_is_ready()
                 and self.state_subscription.get_publisher_count() > 0
                 and self.policy_subscription.get_publisher_count() > 0
                 and self.report_subscription.get_publisher_count() > 0
@@ -189,6 +203,9 @@ class PipelineTestHarness:
         response = future.result()
         test_case.assertIsNotNone(response, f"{label} returned no response")
         return response
+
+    def publish_emergency_stop(self, active: bool) -> None:
+        self.emergency_stop_publisher.publish(Bool(data=active))
 
     def first_event_index(self, predicate):
         for index, (kind, message) in enumerate(self.event_log):
@@ -221,15 +238,18 @@ def assert_read_only(test_case, path: Path) -> None:
     test_case.assertEqual(mode & 0o222, 0, f"{path} is writable")
 
 
-def load_report(test_case, report_root: Path):
-    mission_dirs = [path for path in report_root.iterdir() if path.is_dir()]
+def load_report(test_case, report_root: Path, *, expected_missions: int = 1):
+    mission_dirs = sorted(
+        (path for path in report_root.iterdir() if path.is_dir()),
+        key=lambda path: path.name,
+    )
     test_case.assertEqual(
         len(mission_dirs),
-        1,
-        f"expected exactly one mission directory in {report_root}",
+        expected_missions,
+        f"expected {expected_missions} mission directories in {report_root}",
     )
 
-    mission_dir = mission_dirs[0]
+    mission_dir = mission_dirs[-1]
     report_json = mission_dir / "report.json"
     report_md = mission_dir / "report.md"
     partial = mission_dir / "report.partial.json"
@@ -248,7 +268,13 @@ def load_report(test_case, report_root: Path):
     return payload, mission_dir
 
 
-def verify_report_integrity(test_case, payload, mission_dir: Path) -> None:
+def verify_report_integrity(
+    test_case,
+    payload,
+    mission_dir: Path,
+    *,
+    allowed_assessments_without_evidence: int = 0,
+) -> None:
     integrity = payload["integrity"]
     counts = payload["counts"]
     evidence_records = payload["evidence"]
@@ -265,8 +291,9 @@ def verify_report_integrity(test_case, payload, mission_dir: Path) -> None:
         [],
     )
     test_case.assertEqual(
-        payload["unmatched"]["assessment_without_evidence"],
-        [],
+        len(payload["unmatched"]["assessment_without_evidence"]),
+        allowed_assessments_without_evidence,
+        "unexpected assessments without evidence in the report",
     )
 
     for record in evidence_records:
