@@ -100,4 +100,5 @@ The package includes:
 - policy-watchdog tests;
 - emergency-stop latching tests;
 - inspection and reroute tests;
-- a ROS graph test that completes a two-waypoint mission.
+- a ROS graph test that completes a two-waypoint mission;
+- clean SIGINT and external-shutdown process-exit validation.
