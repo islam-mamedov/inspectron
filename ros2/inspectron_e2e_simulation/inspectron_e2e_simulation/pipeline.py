@@ -66,6 +66,9 @@ def create_pipeline_nodes(
     prefix: str = "",
     node_name_suffix: str = "",
     finalize_delay_ms: int = 250,
+    orchestrator_policy_timeout_ms: int = 1500,
+    supervisor_assessment_timeout_ms: int = 3000,
+    simulator_extra_parameters: dict | None = None,
 ) -> list[Node]:
     remappings = pipeline_remappings(prefix)
 
@@ -97,7 +100,7 @@ def create_pipeline_nodes(
             {
                 "confidence_threshold": 0.70,
                 "view_quality_threshold": 0.60,
-                "assessment_timeout_ms": 3000,
+                "assessment_timeout_ms": supervisor_assessment_timeout_ms,
             }
         ],
         remappings=remappings,
@@ -111,7 +114,7 @@ def create_pipeline_nodes(
         parameters=[
             {
                 "waypoints": waypoints,
-                "policy_timeout_ms": 1500,
+                "policy_timeout_ms": orchestrator_policy_timeout_ms,
                 "reroute_timeout_ms": 5000,
                 "watchdog_rate_hz": 20.0,
             }
@@ -154,24 +157,25 @@ def create_pipeline_nodes(
         remappings=remappings,
     )
 
+    simulator_parameters = {
+        "waypoints": waypoints,
+        "desired_linear_x": 0.30,
+        "desired_angular_z": 0.0,
+        "min_authorized_motion_samples": 5,
+        "frame_interval_ms": 125,
+        "desired_velocity_mode": desired_velocity_mode,
+        "auto_start": auto_start,
+        "abort_on_safety_stop": abort_on_safety_stop,
+        "tick_rate_hz": 20.0,
+    }
+    simulator_parameters.update(simulator_extra_parameters or {})
+
     scenario_simulator = Node(
         package="inspectron_e2e_simulation",
         executable="scenario_simulator_node",
         name=_node_name("scenario_simulator", node_name_suffix),
         output="screen",
-        parameters=[
-            {
-                "waypoints": waypoints,
-                "desired_linear_x": 0.30,
-                "desired_angular_z": 0.0,
-                "min_authorized_motion_samples": 5,
-                "frame_interval_ms": 125,
-                "desired_velocity_mode": desired_velocity_mode,
-                "auto_start": auto_start,
-                "abort_on_safety_stop": abort_on_safety_stop,
-                "tick_rate_hz": 20.0,
-            }
-        ],
+        parameters=[simulator_parameters],
         remappings=remappings,
     )
 

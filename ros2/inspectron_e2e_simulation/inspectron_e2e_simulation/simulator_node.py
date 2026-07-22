@@ -21,9 +21,11 @@ from std_srvs.srv import Trigger
 
 from inspectron_e2e_simulation.scenario_logic import (
     DESIRED_MODE_AUTHORIZED_ONLY,
+    FAULT_DISABLED,
     CallMissionAbort,
     CallMissionStart,
     CompleteScenario,
+    FaultPlan,
     LogNote,
     PublishCameraFrame,
     PublishDesiredVelocity,
@@ -32,6 +34,7 @@ from inspectron_e2e_simulation.scenario_logic import (
 )
 
 TINY_JPEG = b"\xff\xd8\xff\xd9"
+MALFORMED_JPEG = b"not-a-valid-jpeg"
 
 
 class ScenarioSimulatorNode(Node):
@@ -68,6 +71,45 @@ class ScenarioSimulatorNode(Node):
         )
         tick_rate_hz = float(self.declare_parameter("tick_rate_hz", 20.0).value)
 
+        fault_plan = FaultPlan(
+            camera_stall_at_goal_index=int(
+                self.declare_parameter(
+                    "fault_camera_stall_at_goal_index",
+                    FAULT_DISABLED,
+                ).value
+            ),
+            malformed_frame_at_goal_index=int(
+                self.declare_parameter(
+                    "fault_malformed_frame_at_goal_index",
+                    FAULT_DISABLED,
+                ).value
+            ),
+            wrong_goal_frame_at_goal_index=int(
+                self.declare_parameter(
+                    "fault_wrong_goal_frame_at_goal_index",
+                    FAULT_DISABLED,
+                ).value
+            ),
+            desired_stall_at_goal_index=int(
+                self.declare_parameter(
+                    "fault_desired_stall_at_goal_index",
+                    FAULT_DISABLED,
+                ).value
+            ),
+            desired_stall_ticks=int(
+                self.declare_parameter(
+                    "fault_desired_stall_ticks",
+                    0,
+                ).value
+            ),
+            forged_waypoint_at_goal_index=int(
+                self.declare_parameter(
+                    "fault_forged_waypoint_at_goal_index",
+                    FAULT_DISABLED,
+                ).value
+            ),
+        )
+
         if frame_interval_ms <= 0:
             raise ValueError("frame_interval_ms must be positive")
 
@@ -83,6 +125,7 @@ class ScenarioSimulatorNode(Node):
             desired_velocity_mode=desired_velocity_mode,
             auto_start=auto_start,
             abort_on_safety_stop=abort_on_safety_stop,
+            fault_plan=fault_plan,
         )
 
         self.scenario_complete = False
@@ -152,6 +195,12 @@ class ScenarioSimulatorNode(Node):
             self._on_perception_request,
             10,
         )
+        self._closer_view_subscription = self.create_subscription(
+            Empty,
+            "/inspectron/mission/closer_view_request",
+            self._on_perception_request,
+            10,
+        )
 
         self._start_client = self.create_client(
             Trigger,
@@ -172,7 +221,8 @@ class ScenarioSimulatorNode(Node):
             f"waypoints={len(waypoints)} "
             f"mode={desired_velocity_mode} "
             f"auto_start={auto_start} "
-            f"abort_on_safety_stop={abort_on_safety_stop}"
+            f"abort_on_safety_stop={abort_on_safety_stop} "
+            f"enabled_faults={len(fault_plan.enabled_goal_indexes())}"
         )
 
     def _graph_is_ready(self) -> bool:
@@ -258,7 +308,7 @@ class ScenarioSimulatorNode(Node):
     def _execute(self, commands: list[object]) -> None:
         for command in commands:
             if isinstance(command, PublishCameraFrame):
-                self._publish_camera_frame(command.waypoint)
+                self._publish_camera_frame(command.waypoint, command.malformed)
             elif isinstance(command, PublishDesiredVelocity):
                 twist = Twist()
                 twist.linear.x = command.linear_x
@@ -277,12 +327,12 @@ class ScenarioSimulatorNode(Node):
                 self.scenario_complete = True
                 self.get_logger().info(f"E2E_SCENARIO_COMPLETE {command.summary}")
 
-    def _publish_camera_frame(self, waypoint: str) -> None:
+    def _publish_camera_frame(self, waypoint: str, malformed: bool) -> None:
         message = CompressedImage()
         message.header.frame_id = waypoint
         message.header.stamp = self.get_clock().now().to_msg()
         message.format = "jpeg"
-        message.data = TINY_JPEG
+        message.data = MALFORMED_JPEG if malformed else TINY_JPEG
         self._camera_publisher.publish(message)
 
     def _call_trigger(self, client, label: str) -> None:

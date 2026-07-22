@@ -242,10 +242,11 @@ the scenario simulator only.
 - Camera frames are 4-byte valid JPEG stubs and the VLM is a fixture; visual
   content is never interpreted. Real-model behavior is covered by the separate
   VLM benchmark suite, not by this simulation.
-- Only the proceed and critical-hazard-stop paths are exercised. Reroute,
-  inspect-closer, pause/resume, emergency stop, and the systematic
-  fault-injection matrix (timeouts, stale messages, dropped frames, malformed
-  messages) are the next milestone.
+- The demonstration scenarios exercise the proceed and critical-hazard-stop
+  paths. Watchdog timeouts, stale decisions, malformed frames, wrong-goal
+  evidence, forged waypoint reports, command stalls, and emergency-stop
+  recovery are covered by the fault-injection suite; see
+  `docs/ros2-fault-injection.md`. Reroute and pause/resume remain future work.
 - Everything runs on one host with local DDS; network transport effects are
   out of scope.
 - Repeating a waypoint name within one mission (for example after a future

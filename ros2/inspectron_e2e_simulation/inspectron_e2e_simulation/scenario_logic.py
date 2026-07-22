@@ -27,6 +27,9 @@ REPORT_STATUS_FAILED = 3
 DESIRED_MODE_AUTHORIZED_ONLY = "authorized_only"
 DESIRED_MODE_ALWAYS = "always"
 
+FAULT_DISABLED = -1
+WRONG_GOAL_WAYPOINT = "intruder_zone"
+
 MISSION_STATE_NAMES = {
     STATE_IDLE: "idle",
     STATE_WAITING_FOR_POLICY: "waiting_for_policy",
@@ -40,10 +43,15 @@ MISSION_STATE_NAMES = {
     STATE_EMERGENCY_STOPPED: "emergency_stopped",
 }
 
-_STREAMING_MISSION_STATES = {STATE_WAITING_FOR_POLICY, STATE_MOVING}
+_STREAMING_MISSION_STATES = {
+    STATE_WAITING_FOR_POLICY,
+    STATE_MOVING,
+    STATE_INSPECTING_CLOSER,
+}
 _TERMINAL_MISSION_STATES = {STATE_COMPLETED, STATE_ABORTED, STATE_EMERGENCY_STOPPED}
 _VELOCITY_EPSILON = 1e-9
 _PRIME_RETRY_SECONDS = 0.5
+_DESIRED_STALL_ENGAGE_SAMPLES = 2
 
 
 def sanitize_waypoint(waypoint: str) -> str:
@@ -60,11 +68,36 @@ class GoalPhase(Enum):
     DRAINING = "draining"
     AWAITING_STATE_CONFIRMATION = "awaiting_state_confirmation"
     REPORTED = "reported"
+    FAULT_HALTED = "fault_halted"
+
+
+@dataclass(frozen=True, slots=True)
+class FaultPlan:
+    camera_stall_at_goal_index: int = FAULT_DISABLED
+    malformed_frame_at_goal_index: int = FAULT_DISABLED
+    wrong_goal_frame_at_goal_index: int = FAULT_DISABLED
+    desired_stall_at_goal_index: int = FAULT_DISABLED
+    desired_stall_ticks: int = 0
+    forged_waypoint_at_goal_index: int = FAULT_DISABLED
+
+    def enabled_goal_indexes(self) -> list[int]:
+        return [
+            index
+            for index in (
+                self.camera_stall_at_goal_index,
+                self.malformed_frame_at_goal_index,
+                self.wrong_goal_frame_at_goal_index,
+                self.desired_stall_at_goal_index,
+                self.forged_waypoint_at_goal_index,
+            )
+            if index != FAULT_DISABLED
+        ]
 
 
 @dataclass(frozen=True, slots=True)
 class PublishCameraFrame:
     waypoint: str
+    malformed: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +145,7 @@ class _OutstandingFrame:
     waypoint: str
     evidence_id: str | None = None
     assessment_id: str | None = None
+    expect_evidence: bool = True
 
 
 class ScenarioDriverCore:
@@ -126,6 +160,7 @@ class ScenarioDriverCore:
         desired_velocity_mode: str,
         auto_start: bool,
         abort_on_safety_stop: bool,
+        fault_plan: FaultPlan | None = None,
     ) -> None:
         normalized = tuple(str(waypoint).strip() for waypoint in waypoints)
 
@@ -166,6 +201,28 @@ class ScenarioDriverCore:
         }:
             raise ValueError("desired_velocity_mode must be authorized_only or always")
 
+        plan = fault_plan or FaultPlan()
+        enabled_indexes = plan.enabled_goal_indexes()
+
+        for index in enabled_indexes:
+            if not 0 <= index < len(normalized):
+                raise ValueError("Fault goal index is outside the waypoint list")
+
+        if len(set(enabled_indexes)) != len(enabled_indexes):
+            raise ValueError("At most one fault may target a given goal index")
+
+        if plan.desired_stall_at_goal_index != FAULT_DISABLED and plan.desired_stall_ticks < 1:
+            raise ValueError("desired_stall_ticks must be positive when desired stall is enabled")
+
+        if plan.desired_stall_at_goal_index == FAULT_DISABLED and plan.desired_stall_ticks != 0:
+            raise ValueError("desired_stall_ticks requires desired_stall_at_goal_index")
+
+        if (
+            plan.wrong_goal_frame_at_goal_index != FAULT_DISABLED
+            or plan.forged_waypoint_at_goal_index != FAULT_DISABLED
+        ) and WRONG_GOAL_WAYPOINT in normalized:
+            raise ValueError("Waypoints cannot include the wrong-goal fault waypoint")
+
         self.waypoints = normalized
         self.desired_linear_x = float(desired_linear_x)
         self.desired_angular_z = float(desired_angular_z)
@@ -174,6 +231,7 @@ class ScenarioDriverCore:
         self.desired_velocity_mode = desired_velocity_mode
         self.auto_start = bool(auto_start)
         self.abort_on_safety_stop = bool(abort_on_safety_stop)
+        self.fault_plan = plan
 
         self.cmd_vel_stats = CommandVelocityStats()
 
@@ -196,6 +254,12 @@ class ScenarioDriverCore:
         self._goal_phase: dict[str, GoalPhase] = {}
         self._goal_last_evidence: dict[str, str] = {}
         self._authorized_motion_samples: dict[str, int] = {}
+        self._camera_stall_engaged = False
+        self._malformed_sent = False
+        self._wrong_goal_sent = False
+        self._desired_stall_engaged = False
+        self._desired_stall_remaining = 0
+        self._forged_waypoint_sent = False
 
     @property
     def start_gate_open(self) -> bool:
@@ -217,6 +281,10 @@ class ScenarioDriverCore:
     def terminal_state(self) -> int | None:
         return self._terminal_state
 
+    @property
+    def desired_stall_active(self) -> bool:
+        return self._desired_stall_remaining > 0
+
     def goal_phase(self, waypoint: str) -> GoalPhase | None:
         return self._goal_phase.get(waypoint)
 
@@ -230,13 +298,17 @@ class ScenarioDriverCore:
         desired = self._desired_velocity_command()
 
         if desired is not None:
-            commands.append(desired)
+            if self._desired_stall_remaining > 0:
+                self._desired_stall_remaining -= 1
+
+                if self._desired_stall_remaining == 0:
+                    commands.append(LogNote("FAULT released: desired velocity stream resumed"))
+            else:
+                commands.append(desired)
 
         frame_waypoint = self._next_frame_waypoint()
 
         if frame_waypoint is not None and now >= self._next_frame_time:
-            self._outstanding = _OutstandingFrame(waypoint=frame_waypoint)
-
             if self._start_gate_open:
                 self._next_frame_time = now + self.frame_interval_seconds
             else:
@@ -245,7 +317,7 @@ class ScenarioDriverCore:
                     _PRIME_RETRY_SECONDS,
                 )
 
-            commands.append(PublishCameraFrame(waypoint=frame_waypoint))
+            commands.append(self._build_frame_command(frame_waypoint))
 
         return commands
 
@@ -323,6 +395,18 @@ class ScenarioDriverCore:
 
         commands: list[object] = []
 
+        if state == STATE_IDLE and self._goal_phase:
+            self._goal_phase.clear()
+            self._goal_last_evidence.clear()
+            self._authorized_motion_samples.clear()
+            self._outstanding = None
+            self._next_frame_time = 0.0
+            self._start_gate_open = False
+            self._reporter_recording = False
+            commands.append(
+                LogNote("Mission idle; scenario bookkeeping reset, re-priming required")
+            )
+
         if active_goal and active_goal not in self._goal_phase:
             self._goal_phase[active_goal] = GoalPhase.STREAMING
             self._authorized_motion_samples[active_goal] = 0
@@ -334,6 +418,7 @@ class ScenarioDriverCore:
             self._abort_emitted = True
             commands.append(CallMissionAbort())
 
+        commands.extend(self._motion_fault_commands(state, active_goal, motion_authorized))
         commands.extend(self._advance_goal_protocol())
         commands.extend(self._completion_commands())
         return commands
@@ -385,8 +470,23 @@ class ScenarioDriverCore:
             and self._motion_authorized
             and self._goal_phase.get(goal) is GoalPhase.STREAMING
         ):
+            if self._desired_stall_remaining > 0:
+                return []
+
             samples = self._authorized_motion_samples.get(goal, 0) + 1
             self._authorized_motion_samples[goal] = samples
+
+            index = self._waypoint_index(goal)
+
+            if (
+                index is not None
+                and index == self.fault_plan.desired_stall_at_goal_index
+                and not self._desired_stall_engaged
+                and samples >= _DESIRED_STALL_ENGAGE_SAMPLES
+            ):
+                self._desired_stall_engaged = True
+                self._desired_stall_remaining = self.fault_plan.desired_stall_ticks
+                return [LogNote(f"FAULT injected: desired velocity stalled at goal {goal}")]
 
             if samples >= self.min_authorized_motion_samples:
                 self._goal_phase[goal] = GoalPhase.DRAINING
@@ -414,8 +514,70 @@ class ScenarioDriverCore:
             f"nonzero_cmd_vel_samples={stats.nonzero_samples} "
             f"nonzero_before_authorizing_policy={stats.nonzero_before_authorizing_policy} "
             f"max_abs_linear_x={stats.max_abs_linear_x:.3f} "
-            f"trailing_zero_cmd_vel_samples={stats.trailing_zero_samples}"
+            f"trailing_zero_cmd_vel_samples={stats.trailing_zero_samples} "
+            f"injected_faults={self._fault_summary()}"
         )
+
+    def _fault_summary(self) -> str:
+        engaged = []
+
+        if self._camera_stall_engaged:
+            engaged.append("camera_stall")
+
+        if self._malformed_sent:
+            engaged.append("malformed_frame")
+
+        if self._wrong_goal_sent:
+            engaged.append("wrong_goal_frame")
+
+        if self._desired_stall_engaged:
+            engaged.append("desired_stall")
+
+        if self._forged_waypoint_sent:
+            engaged.append("forged_waypoint")
+
+        return ",".join(engaged) or "none"
+
+    def _waypoint_index(self, waypoint: str) -> int | None:
+        try:
+            return self.waypoints.index(waypoint)
+        except ValueError:
+            return None
+
+    def _motion_fault_commands(
+        self,
+        state: int,
+        active_goal: str,
+        motion_authorized: bool,
+    ) -> list[object]:
+        if state != STATE_MOVING or not motion_authorized or not active_goal:
+            return []
+
+        index = self._waypoint_index(active_goal)
+
+        if index is None:
+            return []
+
+        plan = self.fault_plan
+        commands: list[object] = []
+
+        if index == plan.camera_stall_at_goal_index and not self._camera_stall_engaged:
+            self._camera_stall_engaged = True
+            self._goal_phase[active_goal] = GoalPhase.FAULT_HALTED
+            commands.append(LogNote(f"FAULT injected: camera stalled at goal {active_goal}"))
+
+        if index == plan.forged_waypoint_at_goal_index and not self._forged_waypoint_sent:
+            self._forged_waypoint_sent = True
+            self._goal_phase[active_goal] = GoalPhase.FAULT_HALTED
+            commands.append(
+                LogNote(
+                    "FAULT injected: forged waypoint_reached "
+                    f"{WRONG_GOAL_WAYPOINT} instead of {active_goal}"
+                )
+            )
+            commands.append(PublishWaypointReached(waypoint=WRONG_GOAL_WAYPOINT))
+
+        return commands
 
     def _desired_velocity_command(self) -> PublishDesiredVelocity | None:
         if self.desired_velocity_mode == DESIRED_MODE_ALWAYS:
@@ -458,19 +620,51 @@ class ScenarioDriverCore:
 
         return goal
 
+    def _build_frame_command(self, waypoint: str) -> PublishCameraFrame:
+        plan = self.fault_plan
+        index = self._waypoint_index(waypoint)
+        in_mission = self._start_gate_open and self._mission_state != STATE_IDLE
+
+        if (
+            in_mission
+            and index is not None
+            and index == plan.malformed_frame_at_goal_index
+            and not self._malformed_sent
+        ):
+            self._malformed_sent = True
+            self._outstanding = _OutstandingFrame(
+                waypoint=waypoint,
+                expect_evidence=False,
+            )
+            return PublishCameraFrame(waypoint=waypoint, malformed=True)
+
+        if (
+            in_mission
+            and index is not None
+            and index == plan.wrong_goal_frame_at_goal_index
+            and not self._wrong_goal_sent
+        ):
+            self._wrong_goal_sent = True
+            self._outstanding = _OutstandingFrame(waypoint=WRONG_GOAL_WAYPOINT)
+            return PublishCameraFrame(waypoint=WRONG_GOAL_WAYPOINT)
+
+        self._outstanding = _OutstandingFrame(waypoint=waypoint)
+        return PublishCameraFrame(waypoint=waypoint)
+
     def _resolve_outstanding_if_complete(self) -> list[object]:
         outstanding = self._outstanding
 
-        if (
-            outstanding is None
-            or outstanding.evidence_id is None
-            or outstanding.assessment_id is None
-        ):
+        if outstanding is None or outstanding.assessment_id is None:
+            return []
+
+        if outstanding.expect_evidence and outstanding.evidence_id is None:
             return []
 
         commands: list[object] = []
 
-        if outstanding.evidence_id != outstanding.assessment_id:
+        if outstanding.evidence_id is not None and outstanding.evidence_id != (
+            outstanding.assessment_id
+        ):
             commands.append(
                 LogNote(
                     "Evidence and assessment identifiers diverged: "

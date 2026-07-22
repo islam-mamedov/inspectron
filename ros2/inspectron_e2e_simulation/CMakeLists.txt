@@ -41,6 +41,12 @@ if(BUILD_TESTING)
   )
 
   ament_add_pytest_test(
+    test_fault_logic
+    test/test_fault_logic.py
+    TIMEOUT 60
+  )
+
+  ament_add_pytest_test(
     test_scenarios
     test/test_scenarios.py
     TIMEOUT 60
@@ -54,6 +60,26 @@ if(BUILD_TESTING)
   add_launch_test(
     test/test_e2e_hazard_stop_launch.py
     TIMEOUT 120
+  )
+
+  add_launch_test(
+    test/test_fault_watchdog_orchestrator_launch.py
+    TIMEOUT 120
+  )
+
+  add_launch_test(
+    test/test_fault_watchdog_supervisor_launch.py
+    TIMEOUT 120
+  )
+
+  add_launch_test(
+    test/test_fault_recovery_launch.py
+    TIMEOUT 180
+  )
+
+  add_launch_test(
+    test/test_fault_authority_launch.py
+    TIMEOUT 180
   )
 endif()
 
