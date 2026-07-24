@@ -22,16 +22,16 @@ waypoint-specific JSON documents and the whole run is offline and repeatable.
 | `evidence_reporter` | `inspectron_evidence_reporter` | real evidence + report recorder |
 
 
-The simulator publishes camera frames in **lockstep**: at most one frame is in
-flight, and the next frame is published only after the previous frame's
-evidence capture *and* scene assessment were both observed. The bridge's job
-queue (`maxsize=1`) silently drops frames while inference is active and dropped
-frames produce neither evidence nor assessment; lockstep makes drops
-impossible, while reliable simulator-side camera QoS prevents the initial
-priming frame from being lost during graph convergence. Every published frame
-therefore yields exactly one evidence capture and one assessment with the same
-evidence ID. Each frame carries the active mission goal in `header.frame_id`,
-which the bridge turns into the
+After priming, the simulator publishes camera frames in **lockstep**: at most
+one frame is in flight, and the next frame is published only after the previous
+frame's evidence capture *and* scene assessment were both observed. Before the
+first evidence acknowledgment, the simulator retries the priming frame every
+500 ms so DDS discovery cannot strand the scenario if the first camera sample
+is lost. The bridge's job queue (`maxsize=1`) silently drops frames while
+inference is active; evidence acknowledgment restores lockstep before another
+retry can be emitted. Each accepted frame therefore yields exactly one evidence
+capture and one assessment with the same evidence ID. Each frame carries the
+active mission goal in `header.frame_id`, which the bridge turns into the
 `{waypoint}-{stamp}-{sequence}` evidence ID that the orchestrator later checks
 against its active goal.
 

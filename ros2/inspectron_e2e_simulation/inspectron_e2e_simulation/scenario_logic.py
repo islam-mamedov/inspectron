@@ -595,13 +595,18 @@ class ScenarioDriverCore:
         return None
 
     def _next_frame_waypoint(self) -> str | None:
-        if not self._graph_ready or self._outstanding is not None:
+        if not self._graph_ready:
             return None
 
         if not self._start_gate_open:
-            if self._mission_state == STATE_IDLE:
+            if self._mission_state == STATE_IDLE and (
+                self._outstanding is None or self._outstanding.evidence_id is None
+            ):
                 return self.waypoints[0]
 
+            return None
+
+        if self._outstanding is not None:
             return None
 
         if not self._reporter_recording:
