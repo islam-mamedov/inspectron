@@ -63,6 +63,11 @@ if(BUILD_TESTING)
   )
 
   add_launch_test(
+    test/test_e2e_reroute_pause_resume_launch.py
+    TIMEOUT 180
+  )
+
+  add_launch_test(
     test/test_fault_watchdog_orchestrator_launch.py
     TIMEOUT 120
   )

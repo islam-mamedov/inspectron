@@ -144,6 +144,9 @@ class MissionStateMachine:
         }:
             return self._reject("Mission is not in a pausable state")
 
+        self._last_policy_at = None
+        self._latest_policy_allows_motion = False
+        self._reroute_started_at = None
         self._transition(
             MissionPhase.PAUSED,
             "Mission paused by operator",

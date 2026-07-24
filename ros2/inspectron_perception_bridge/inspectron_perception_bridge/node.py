@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import queue
 import tempfile
@@ -120,8 +121,15 @@ class PerceptionBridgeNode(Node):
                 "",
             ).value
         )
+        self.fixture_responses_by_waypoint_json = str(
+            self.declare_parameter(
+                "fixture_responses_by_waypoint_json",
+                "{}",
+            ).value
+        )
 
         self._validate_parameters()
+        self._fixture_responses_by_waypoint = self._parse_fixture_responses_by_waypoint()
 
         self._perception = SiteSafetyVLMPerception(self._build_client())
 
@@ -196,6 +204,31 @@ class PerceptionBridgeNode(Node):
 
         if not self.scene_id.strip():
             raise ValueError("scene_id cannot be empty")
+
+    def _parse_fixture_responses_by_waypoint(self) -> dict[str, str]:
+        if self.provider != "fixture":
+            return {}
+
+        try:
+            payload = json.loads(self.fixture_responses_by_waypoint_json)
+        except json.JSONDecodeError as error:
+            raise ValueError("fixture_responses_by_waypoint_json must be valid JSON") from error
+
+        if not isinstance(payload, dict):
+            raise ValueError("fixture_responses_by_waypoint_json must be a JSON object")
+
+        responses: dict[str, str] = {}
+
+        for waypoint, response in payload.items():
+            if not isinstance(waypoint, str) or not waypoint.strip():
+                raise ValueError("Fixture response waypoint names cannot be empty")
+
+            if not isinstance(response, dict):
+                raise ValueError("Each waypoint fixture response must be a JSON object")
+
+            responses[waypoint.strip()] = json.dumps(response)
+
+        return responses
 
     def _build_client(self):
         if self.provider == "ollama":
@@ -333,7 +366,13 @@ class PerceptionBridgeNode(Node):
                     image_path=str(image_path),
                 )
 
-                assessment = self._perception.analyze(frame)
+                perception = self._perception
+                fixture_response = self._fixture_responses_by_waypoint.get(job.waypoint)
+
+                if fixture_response is not None:
+                    perception = SiteSafetyVLMPerception(_FixtureVLMClient(fixture_response))
+
+                assessment = perception.analyze(frame)
                 result = _AnalysisResult(assessment=assessment)
             except Exception as error:
                 result = _AnalysisResult(

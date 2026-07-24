@@ -98,16 +98,14 @@ colcon test-result --verbose
 '
 ```
 
-Expected: `100% tests passed, 0 tests failed out of 9` - three pytest suites
-plus six launch tests (the two end-to-end scenarios and the four fault suites),
-finishing in roughly twenty seconds of test time.
+Expected: `100% tests passed, 0 tests failed out of 10` - three pytest suites
+plus seven launch tests (the three end-to-end scenarios and the four fault
+suites), finishing in roughly half a minute of test time.
 
 ## Limitations
 
 - Faults are injected at the simulator boundary; in-node fault injection
   (memory pressure, thread stalls inside production nodes) is out of scope.
-- Reroute and pause/resume mission paths are not yet exercised; a blocked-path
-  fixture scenario would be the natural vehicle for reroute testing.
 - The demonstration launch (`e2e_simulation.launch.py`) intentionally exposes
   only the `safe_mission` and `hazard_stop` scenarios; fault runs are
   test-driven because their assertions are what give them meaning.

@@ -126,16 +126,19 @@ class PrimingTest(unittest.TestCase):
         frame = prime(core)
         self.assertEqual(frame.waypoint, "aisle_a")
 
-    def test_lockstep_blocks_second_frame_until_resolution(self):
+    def test_missing_prime_evidence_is_retried_then_lockstep_resumes(self):
         core = make_core()
-        prime(core)
-        self.assertEqual(commands_of_type(core.on_tick(10.0), PublishCameraFrame), [])
+        prime(core, now=0.0)
+        self.assertEqual(commands_of_type(core.on_tick(0.2), PublishCameraFrame), [])
+        frames = commands_of_type(core.on_tick(0.6), PublishCameraFrame)
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(frames[0].waypoint, "aisle_a")
 
         core.on_evidence_capture(evidence_id_for("aisle_a", 1))
-        self.assertEqual(commands_of_type(core.on_tick(11.0), PublishCameraFrame), [])
+        self.assertEqual(commands_of_type(core.on_tick(1.2), PublishCameraFrame), [])
 
         core.on_assessment(evidence_id_for("aisle_a", 1))
-        frames = commands_of_type(core.on_tick(12.0), PublishCameraFrame)
+        frames = commands_of_type(core.on_tick(1.3), PublishCameraFrame)
         self.assertEqual(len(frames), 1)
 
     def test_prime_retry_is_paced(self):
@@ -187,6 +190,22 @@ class StreamingGateTest(unittest.TestCase):
         frames = commands_of_type(core.on_tick(31.0), PublishCameraFrame)
         self.assertEqual(len(frames), 1)
         self.assertEqual(frames[0].waypoint, "aisle_a")
+
+    def test_in_mission_lockstep_blocks_frames_until_resolution(self):
+        core = make_core()
+        prime_and_start(core)
+        begin_recorded_waiting(core, "aisle_a")
+
+        frames = commands_of_type(core.on_tick(35.0), PublishCameraFrame)
+        self.assertEqual(len(frames), 1)
+        self.assertEqual(commands_of_type(core.on_tick(36.0), PublishCameraFrame), [])
+
+        core.on_evidence_capture(evidence_id_for("aisle_a", 2))
+        self.assertEqual(commands_of_type(core.on_tick(37.0), PublishCameraFrame), [])
+
+        core.on_assessment(evidence_id_for("aisle_a", 2))
+        frames = commands_of_type(core.on_tick(38.0), PublishCameraFrame)
+        self.assertEqual(len(frames), 1)
 
     def test_streaming_stops_in_safety_stopped(self):
         core = make_core()

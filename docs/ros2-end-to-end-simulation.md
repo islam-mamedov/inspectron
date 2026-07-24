@@ -7,8 +7,8 @@ no Ollama server:
 
 All production nodes run unmodified. The only simulation-specific node is the
 scenario simulator; perception uses the bridge's deterministic `fixture`
-provider, so the VLM response is a fixed JSON document and the whole run is
-offline and repeatable.
+provider, so the VLM response comes from deterministic default and
+waypoint-specific JSON documents and the whole run is offline and repeatable.
 
 ## Nodes and message flow
 
@@ -22,14 +22,16 @@ offline and repeatable.
 | `evidence_reporter` | `inspectron_evidence_reporter` | real evidence + report recorder |
 
 
-The simulator publishes camera frames in **lockstep**: at most one frame is in
-flight, and the next frame is published only after the previous frame's
-evidence capture *and* scene assessment were both observed. The bridge's job
-queue (`maxsize=1`) silently drops frames while inference is active and dropped
-frames produce neither evidence nor assessment; lockstep makes drops
-impossible, so every published frame yields exactly one evidence capture and
-one assessment with the same evidence ID. Each frame carries the active
-mission goal in `header.frame_id`, which the bridge turns into the
+After priming, the simulator publishes camera frames in **lockstep**: at most
+one frame is in flight, and the next frame is published only after the previous
+frame's evidence capture *and* scene assessment were both observed. Before the
+first evidence acknowledgment, the simulator retries the priming frame every
+500 ms so DDS discovery cannot strand the scenario if the first camera sample
+is lost. The bridge's job queue (`maxsize=1`) silently drops frames while
+inference is active; evidence acknowledgment restores lockstep before another
+retry can be emitted. Each accepted frame therefore yields exactly one evidence
+capture and one assessment with the same evidence ID. Each frame carries the
+active mission goal in `header.frame_id`, which the bridge turns into the
 `{waypoint}-{stamp}-{sequence}` evidence ID that the orchestrator later checks
 against its active goal.
 
@@ -60,6 +62,15 @@ thresholds on purpose: the stop must be attributed to the critical hazard, not
 to weak evidence. Its continuous desired-velocity stream proves the motion
 controller blocks an actively requesting navigation stack, not merely a silent
 one.
+
+The test-only adaptive scenario starts with the safe fixture, pauses during
+authorized motion, and proves `/cmd_vel` remains zero. Resume must obtain a new
+matching policy before motion returns. At `aisle_b`, a waypoint-specific
+blocked/debris fixture produces `REROUTE`; the test holds the system in
+`REROUTING`, verifies zero motion, and then publishes the alternate target
+`aisle_b_detour`. The completed goal sequence is
+`aisle_a, aisle_b, aisle_b_detour, aisle_c`, and the finalized report contains
+evidence for both the blocked route and its detour.
 
 ## How the simulator decides a waypoint was reached
 
@@ -106,6 +117,11 @@ deterministic without weakening the production check.
 9. Reports cannot claim verified integrity unless evidence passes byte-count
    and SHA-256 checks - the tests independently recompute SHA-256 for every
    stored file and assert `integrity.verified`.
+10. Pause invalidates pre-pause authorization - resume remains stopped until a
+    new matching evidence/policy pair reaches the orchestrator.
+11. Reroute is fail-closed - the blocked goal produces a reroute request and
+    motion remains zero until an alternate target is explicitly supplied and
+    separately authorized.
 
 ## Report artifacts
 
@@ -143,8 +159,9 @@ colcon test-result --verbose
 '
 ```
 
-Expected: `100% tests passed, 0 tests failed out of 4` (two pytest suites and
-two launch tests), and a final summary with 0 errors, 0 failures, 0 skipped.
+Expected: `100% tests passed, 0 tests failed out of 10` (three pytest suites
+and seven launch tests), and a final summary with 0 errors, 0 failures, 0
+skipped.
 
 ## Run the demonstration
 
@@ -214,11 +231,12 @@ were widened, never disabled.
 ## Test isolation
 
 Launch tests from different packages run concurrently under `colcon test`, and
-several existing tests use unremapped production topic names. Both simulation
-tests therefore remap **every** production topic and service to a per-scenario
-prefix (`/test/e2e_safe/...`, `/test/e2e_hazard/...`) and add per-scenario node
-name suffixes, so the simulation cannot consume from or publish into any other
-test, in either direction.
+several existing tests use unremapped production topic names. All simulation
+launch tests therefore remap **every** production topic and service to a
+per-test prefix (including `/test/e2e_safe/...`,
+`/test/e2e_reroute_pause_resume/...`, and the fault-test prefixes) and add
+per-scenario node name suffixes, so the simulation cannot consume from or
+publish into any other test, in either direction.
 
 ## Clean shutdown
 
@@ -238,11 +256,13 @@ the context safely. Its launch test verifies a clean process exit with code 0.
   content is never interpreted. Real-model behavior is covered by the separate
   VLM benchmark suite, not by this simulation.
 - The demonstration scenarios exercise the proceed and critical-hazard-stop
-  paths. Watchdog timeouts, stale decisions, malformed frames, wrong-goal
-  evidence, forged waypoint reports, command stalls, and emergency-stop
-  recovery are covered by the fault-injection suite; see
-  `docs/ros2-fault-injection.md`. Reroute and pause/resume remain future work.
+  paths. Reroute and pause/resume are test-driven because operator timing and
+  assertions give those paths meaning. Watchdog timeouts, stale decisions,
+  malformed frames, wrong-goal evidence, forged waypoint reports, command
+  stalls, and emergency-stop recovery are covered by the fault-injection
+  suite; see `docs/ros2-fault-injection.md`.
 - Everything runs on one host with local DDS; network transport effects are
   out of scope.
-- Repeating a waypoint name within one mission (for example after a future
-  reroute back) is not supported by the simulator's per-goal bookkeeping.
+- Repeating a waypoint name within one mission (for example a reroute back to
+  an already visited target) is not supported by the simulator's per-goal
+  bookkeeping.
