@@ -184,9 +184,13 @@ class AuthorityFaultTest(unittest.TestCase):
         self.assertIn("Policy evidence does not match", stopped.reason)
         self.assertEqual(stopped.active_goal, WRONG_GOAL_TARGET)
 
-        self.assertTrue(
-            any(policy.evidence_id.startswith("intruder_zone-") for policy in harness.policies),
-            "the wrong-goal decision never flowed through the supervisor",
+        harness.wait_until(
+            lambda: any(
+                policy.evidence_id.startswith("intruder_zone-") for policy in harness.policies
+            ),
+            timeout_seconds=10.0,
+            failure_message="the wrong-goal decision never flowed through the supervisor",
+            test_case=self,
         )
 
         for state in harness.states:
