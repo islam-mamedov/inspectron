@@ -65,6 +65,11 @@ The default configuration is located at:
 It defines the provider, service URL, model, timeout, image-size limit, Ollama
 context window, default waypoint, and scene identifier.
 
+For deterministic integration tests, `fixture_response_json` supplies the
+default response and `fixture_responses_by_waypoint_json` may override it with
+a JSON object keyed by camera-frame waypoint. Production providers ignore the
+override map.
+
 ## Validation
 
 The implementation includes:
@@ -73,6 +78,7 @@ The implementation includes:
 - JPEG and PNG validation tests;
 - malformed and oversized image tests;
 - deterministic VLM assessment tests;
+- waypoint-specific deterministic fixture tests;
 - fail-closed publication tests;
 - ROS graph integration tests;
 - clean-shutdown validation.

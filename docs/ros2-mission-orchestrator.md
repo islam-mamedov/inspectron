@@ -77,6 +77,10 @@ The orchestrator cancels motion when:
 A safety-stopped mission never automatically restarts. It requires a fresh
 motion-authorizing policy and an explicit resume request.
 
+Pausing invalidates the previous motion policy. Resume republishes the active
+goal, requests new perception, and remains in `WAITING_FOR_POLICY` until a new
+matching decision authorizes motion.
+
 After emergency stop is cleared, the mission remains latched and must be reset
 before another mission can start.
 
@@ -100,5 +104,7 @@ The package includes:
 - policy-watchdog tests;
 - emergency-stop latching tests;
 - inspection and reroute tests;
+- pause-policy invalidation and resume tests;
 - a ROS graph test that completes a two-waypoint mission;
+- a full-pipeline reroute and pause/resume launch test;
 - clean SIGINT and external-shutdown process-exit validation.

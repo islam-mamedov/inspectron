@@ -13,7 +13,6 @@ from rclpy.qos import (
     DurabilityPolicy,
     QoSProfile,
     ReliabilityPolicy,
-    qos_profile_sensor_data,
 )
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Empty, String
@@ -136,11 +135,15 @@ class ScenarioSimulatorNode(Node):
             reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
+        camera_qos = QoSProfile(
+            depth=10,
+            reliability=ReliabilityPolicy.RELIABLE,
+        )
 
         self._camera_publisher = self.create_publisher(
             CompressedImage,
             "/inspectron/camera/compressed",
-            qos_profile_sensor_data,
+            camera_qos,
         )
         self._desired_publisher = self.create_publisher(
             Twist,

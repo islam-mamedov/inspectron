@@ -11,7 +11,7 @@ from inspectron_evidence_msgs.msg import EvidenceCapture, ReportStatus
 from inspectron_mission_msgs.msg import MissionState
 from inspectron_safety_supervisor.msg import PolicyDecision, SceneAssessment
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from std_srvs.srv import Trigger
 
 from inspectron_e2e_simulation.pipeline import remapped_name
@@ -42,6 +42,7 @@ class PipelineTestHarness:
         self.evidence: list[EvidenceCapture] = []
         self.cmd_vels: list[Twist] = []
         self.report_statuses: list[ReportStatus] = []
+        self.reroute_requests: list[String] = []
         self.event_log: list[tuple[str, object]] = []
 
         transient = QoSProfile(
@@ -90,10 +91,21 @@ class PipelineTestHarness:
             self._on_cmd_vel,
             volatile,
         )
+        self.reroute_request_subscription = self.node.create_subscription(
+            String,
+            self._name("/inspectron/mission/reroute_request"),
+            self._on_reroute_request,
+            volatile,
+        )
 
         self.emergency_stop_publisher = self.node.create_publisher(
             Bool,
             self._name("/inspectron/emergency_stop"),
+            10,
+        )
+        self.reroute_target_publisher = self.node.create_publisher(
+            String,
+            self._name("/inspectron/mission/reroute_target"),
             10,
         )
 
@@ -104,6 +116,14 @@ class PipelineTestHarness:
         self.abort_client = self.node.create_client(
             Trigger,
             self._name("/inspectron/mission/abort"),
+        )
+        self.pause_client = self.node.create_client(
+            Trigger,
+            self._name("/inspectron/mission/pause"),
+        )
+        self.resume_client = self.node.create_client(
+            Trigger,
+            self._name("/inspectron/mission/resume"),
         )
         self.reset_client = self.node.create_client(
             Trigger,
@@ -137,17 +157,25 @@ class PipelineTestHarness:
         self.cmd_vels.append(message)
         self.event_log.append(("cmd_vel", message))
 
+    def _on_reroute_request(self, message: String) -> None:
+        self.reroute_requests.append(message)
+        self.event_log.append(("reroute_request", message))
+
     def destroy(self) -> None:
         self.node.destroy_client(self.start_client)
         self.node.destroy_client(self.abort_client)
+        self.node.destroy_client(self.pause_client)
+        self.node.destroy_client(self.resume_client)
         self.node.destroy_client(self.reset_client)
         self.node.destroy_publisher(self.emergency_stop_publisher)
+        self.node.destroy_publisher(self.reroute_target_publisher)
         self.node.destroy_subscription(self.state_subscription)
         self.node.destroy_subscription(self.policy_subscription)
         self.node.destroy_subscription(self.report_subscription)
         self.node.destroy_subscription(self.assessment_subscription)
         self.node.destroy_subscription(self.evidence_subscription)
         self.node.destroy_subscription(self.cmd_vel_subscription)
+        self.node.destroy_subscription(self.reroute_request_subscription)
         self.node.destroy_node()
 
     def wait_until(
@@ -173,6 +201,8 @@ class PipelineTestHarness:
             lambda: (
                 self.start_client.service_is_ready()
                 and self.abort_client.service_is_ready()
+                and self.pause_client.service_is_ready()
+                and self.resume_client.service_is_ready()
                 and self.reset_client.service_is_ready()
                 and self.state_subscription.get_publisher_count() > 0
                 and self.policy_subscription.get_publisher_count() > 0
@@ -180,6 +210,8 @@ class PipelineTestHarness:
                 and self.assessment_subscription.get_publisher_count() > 0
                 and self.evidence_subscription.get_publisher_count() > 0
                 and self.cmd_vel_subscription.get_publisher_count() > 0
+                and self.reroute_request_subscription.get_publisher_count() > 0
+                and self.reroute_target_publisher.get_subscription_count() > 0
             ),
             timeout_seconds=timeout_seconds,
             failure_message="simulation pipeline graph was not discovered",
@@ -206,6 +238,9 @@ class PipelineTestHarness:
 
     def publish_emergency_stop(self, active: bool) -> None:
         self.emergency_stop_publisher.publish(Bool(data=active))
+
+    def publish_reroute_target(self, target: str) -> None:
+        self.reroute_target_publisher.publish(String(data=target))
 
     def first_event_index(self, predicate):
         for index, (kind, message) in enumerate(self.event_log):

@@ -28,6 +28,17 @@ def generate_test_description():
             "view_quality": 0.90,
         }
     )
+    fixture_responses_by_waypoint = json.dumps(
+        {
+            "blocked_aisle": {
+                "traversability": "blocked",
+                "hazards": ["debris"],
+                "recommended_action": "reroute",
+                "confidence": 0.94,
+                "view_quality": 0.91,
+            }
+        }
+    )
 
     bridge = launch_ros.actions.Node(
         package="inspectron_perception_bridge",
@@ -39,6 +50,7 @@ def generate_test_description():
                 "provider": "fixture",
                 "model": "fixture-model",
                 "fixture_response_json": fixture_response,
+                "fixture_responses_by_waypoint_json": (fixture_responses_by_waypoint),
                 "default_waypoint": "test_waypoint",
                 "scene_id": "test_scene",
                 "timeout_seconds": 1.0,
@@ -227,3 +239,31 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
         self.assertEqual(invalid_assessment.confidence, 0.0)
         self.assertEqual(invalid_assessment.view_quality, 0.0)
         self.assertTrue(invalid_assessment.evidence_id.startswith("aisle_b-"))
+
+        blocked_image = CompressedImage()
+        blocked_image.header.frame_id = "blocked_aisle"
+        blocked_image.header.stamp = self.node.get_clock().now().to_msg()
+        blocked_image.format = "jpeg"
+        blocked_image.data = b"\xff\xd8\xff\xd9"
+
+        blocked_assessment = self._publish_until_assessment(
+            image=blocked_image,
+            predicate=lambda assessment: (
+                assessment.recommended_action == SceneAssessment.ACTION_REROUTE
+            ),
+            description="waypoint-specific fixture assessment",
+        )
+
+        self.assertEqual(
+            blocked_assessment.traversability,
+            SceneAssessment.TRAVERSABILITY_BLOCKED,
+        )
+        self.assertEqual(
+            blocked_assessment.recommended_action,
+            SceneAssessment.ACTION_REROUTE,
+        )
+        self.assertEqual(
+            list(blocked_assessment.hazards),
+            [SceneAssessment.HAZARD_DEBRIS],
+        )
+        self.assertTrue(blocked_assessment.evidence_id.startswith("blocked_aisle-"))

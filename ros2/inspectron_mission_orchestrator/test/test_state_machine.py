@@ -158,6 +158,44 @@ class MissionStateMachineTests(unittest.TestCase):
         )
         self.assertTrue(self.machine.snapshot.motion_authorized)
 
+    def test_pause_invalidates_policy_before_resume(self):
+        self.machine.start()
+        self.machine.apply_policy(
+            action=ACTION_PROCEED,
+            status=STATUS_VALID,
+            evidence_id="aisle_a-1.000000000-000001",
+            now=1.0,
+        )
+
+        paused = self.machine.pause()
+
+        self.assertTrue(paused.accepted)
+        self.assertTrue(paused.cancel_motion)
+        self.assertEqual(self.machine.snapshot.state, MissionPhase.PAUSED)
+        self.assertFalse(self.machine.snapshot.motion_authorized)
+
+        resumed = self.machine.resume(1.1)
+
+        self.assertTrue(resumed.accepted)
+        self.assertTrue(resumed.publish_goal)
+        self.assertTrue(resumed.request_perception)
+        self.assertEqual(
+            self.machine.snapshot.state,
+            MissionPhase.WAITING_FOR_POLICY,
+        )
+        self.assertFalse(self.machine.snapshot.motion_authorized)
+
+        fresh_policy = self.machine.apply_policy(
+            action=ACTION_PROCEED,
+            status=STATUS_VALID,
+            evidence_id="aisle_a-1.200000000-000002",
+            now=1.2,
+        )
+
+        self.assertTrue(fresh_policy.accepted)
+        self.assertEqual(self.machine.snapshot.state, MissionPhase.MOVING)
+        self.assertTrue(self.machine.snapshot.motion_authorized)
+
     def test_inspect_and_reroute_are_fail_closed(self):
         self.machine.start()
 
