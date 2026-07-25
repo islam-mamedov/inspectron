@@ -63,12 +63,13 @@ to weak evidence. Its continuous desired-velocity stream proves the motion
 controller blocks an actively requesting navigation stack, not merely a silent
 one.
 
-The test-only adaptive scenario starts with the safe fixture, pauses during
-authorized motion, and proves `/cmd_vel` remains zero. Resume must obtain a new
-matching policy before motion returns. At `aisle_b`, a waypoint-specific
-blocked/debris fixture produces `REROUTE`; the test holds the system in
-`REROUTING`, verifies zero motion, and then publishes the alternate target
-`aisle_b_detour`. The completed goal sequence is
+The test-only adaptive scenario streams desired velocity continuously, starts
+with the safe fixture, pauses during authorized motion, and proves
+`/cmd_vel` remains zero despite the adversarial input. Resume must obtain a new
+matching policy and mission authorization before motion returns. At `aisle_b`,
+a waypoint-specific blocked/debris fixture produces `REROUTE`; the test holds
+the system in `REROUTING`, verifies sustained zero motion, and then publishes
+the alternate target `aisle_b_detour`. The completed goal sequence is
 `aisle_a, aisle_b, aisle_b_detour, aisle_c`, and the finalized report contains
 evidence for both the blocked route and its detour.
 
@@ -122,6 +123,10 @@ deterministic without weakening the production check.
 11. Reroute is fail-closed - the blocked goal produces a reroute request and
     motion remains zero until an alternate target is explicitly supplied and
     separately authorized.
+12. Mission authority is enforced at the controller boundary - fresh
+    `PROCEED` policy and desired velocity still produce zero output while the
+    mission is paused, rerouting, or complete, and the controller requires the
+    mission and policy evidence IDs to match.
 
 ## Report artifacts
 

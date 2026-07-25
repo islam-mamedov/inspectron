@@ -9,6 +9,7 @@ option(
 
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(inspectron_mission_msgs REQUIRED)
 find_package(inspectron_safety_supervisor REQUIRED)
 find_package(rclcpp REQUIRED)
 
@@ -61,6 +62,7 @@ target_link_libraries(motion_controller_node motion_policy)
 ament_target_dependencies(
   motion_controller_node
   geometry_msgs
+  inspectron_mission_msgs
   inspectron_safety_supervisor
   rclcpp
 )
@@ -96,6 +98,7 @@ ament_export_include_directories(include)
 
 ament_export_dependencies(
   geometry_msgs
+  inspectron_mission_msgs
   inspectron_safety_supervisor
   rclcpp
 )

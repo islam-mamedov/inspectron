@@ -20,6 +20,7 @@ from inspectron_e2e_simulation.testing import (
 )
 from inspectron_evidence_msgs.msg import ReportStatus
 from inspectron_mission_msgs.msg import MissionState
+from inspectron_safety_supervisor.msg import PolicyDecision
 
 PREFIX = "/test/e2e_reroute_pause_resume"
 REPORT_ROOT = Path(mkdtemp(prefix="inspectron-e2e-reroute-pause-"))
@@ -43,7 +44,7 @@ def generate_test_description():
         fixture_responses_by_waypoint_json=json.dumps({BLOCKED_WAYPOINT: BLOCKED_FIXTURE_RESPONSE}),
         report_directory=str(REPORT_ROOT),
         scene_id="e2e_reroute_pause_resume",
-        desired_velocity_mode="authorized_only",
+        desired_velocity_mode="always",
         auto_start=False,
         abort_on_safety_stop=False,
         prefix=PREFIX,
@@ -79,6 +80,34 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
 
     def tearDown(self):
         self.harness.destroy()
+
+    def _assert_sustained_zero_velocity(self, description, sample_count=8):
+        harness = self.harness
+        harness.wait_until(
+            lambda: harness.cmd_vels and not is_nonzero_twist(harness.cmd_vels[-1]),
+            timeout_seconds=10.0,
+            failure_message=f"cmd_vel did not stop during {description}",
+            test_case=self,
+        )
+
+        output_marker = len(harness.cmd_vels)
+        desired_marker = len(harness.desired_cmd_vels)
+        harness.wait_until(
+            lambda: (
+                len(harness.cmd_vels) >= output_marker + sample_count
+                and len(harness.desired_cmd_vels) >= desired_marker + sample_count
+                and all(not is_nonzero_twist(twist) for twist in harness.cmd_vels[output_marker:])
+                and all(
+                    is_nonzero_twist(twist) for twist in harness.desired_cmd_vels[desired_marker:]
+                )
+            ),
+            timeout_seconds=10.0,
+            failure_message=(
+                "nonzero desired velocity did not remain fresh and fully blocked "
+                f"during {description}"
+            ),
+            test_case=self,
+        )
 
     def test_pause_requires_fresh_policy_then_blocked_goal_reroutes(self):
         harness = self.harness
@@ -142,16 +171,7 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
         )
         self.assertFalse(paused_state.motion_authorized)
 
-        paused_cmd_marker = len(harness.cmd_vels)
-        harness.wait_until(
-            lambda: (
-                len(harness.cmd_vels) >= paused_cmd_marker + 5
-                and all(not is_nonzero_twist(twist) for twist in harness.cmd_vels[-5:])
-            ),
-            timeout_seconds=10.0,
-            failure_message="cmd_vel did not remain zero while paused",
-            test_case=self,
-        )
+        self._assert_sustained_zero_velocity("PAUSED")
 
         resume_state_marker = len(harness.states)
         resume_policy_marker = len(harness.policies)
@@ -189,12 +209,20 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
             failure_message="no fresh authorizing policy arrived after resume",
             test_case=self,
         )
+        resumed_policy = next(
+            policy
+            for policy in harness.policies[resume_policy_marker:]
+            if is_authorizing(policy)
+            and policy.evidence_id.startswith("aisle_a-")
+            and policy.evidence_id != paused_state.last_evidence_id
+        )
 
         harness.wait_until(
             lambda: any(
                 state.state == MissionState.STATE_MOVING
                 and state.active_goal == "aisle_a"
                 and state.motion_authorized
+                and state.last_evidence_id == resumed_policy.evidence_id
                 for state in harness.states[resume_state_marker:]
             ),
             timeout_seconds=20.0,
@@ -203,29 +231,39 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
         )
 
         harness.wait_until(
+            lambda: any(
+                policy.status == PolicyDecision.STATUS_VALID
+                and policy.action == PolicyDecision.ACTION_REROUTE
+                and policy.evidence_id.startswith(f"{BLOCKED_WAYPOINT}-")
+                for policy in harness.policies
+            ),
+            timeout_seconds=60.0,
+            failure_message="blocked aisle never produced a reroute policy",
+            test_case=self,
+        )
+        reroute_policy = next(
+            policy
+            for policy in harness.policies
+            if policy.status == PolicyDecision.STATUS_VALID
+            and policy.action == PolicyDecision.ACTION_REROUTE
+            and policy.evidence_id.startswith(f"{BLOCKED_WAYPOINT}-")
+        )
+        harness.wait_until(
             lambda: (
                 any(request.data == BLOCKED_WAYPOINT for request in harness.reroute_requests)
                 and any(
                     state.state == MissionState.STATE_REROUTING
                     and state.active_goal == BLOCKED_WAYPOINT
+                    and state.last_evidence_id == reroute_policy.evidence_id
                     for state in harness.states
                 )
             ),
-            timeout_seconds=60.0,
-            failure_message="blocked aisle never produced a reroute request",
+            timeout_seconds=10.0,
+            failure_message="reroute state did not preserve the blocking policy evidence",
             test_case=self,
         )
 
-        reroute_cmd_marker = len(harness.cmd_vels)
-        harness.wait_until(
-            lambda: (
-                len(harness.cmd_vels) >= reroute_cmd_marker + 5
-                and all(not is_nonzero_twist(twist) for twist in harness.cmd_vels[-5:])
-            ),
-            timeout_seconds=10.0,
-            failure_message="cmd_vel did not remain zero while rerouting",
-            test_case=self,
-        )
+        self._assert_sustained_zero_velocity("REROUTING")
 
         harness.publish_reroute_target(REROUTE_TARGET)
 
@@ -257,6 +295,7 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
         self.assertEqual(completed.waypoint_index, len(WAYPOINTS))
         self.assertEqual(completed.waypoint_count, len(WAYPOINTS))
         self.assertFalse(completed.motion_authorized)
+        self._assert_sustained_zero_velocity("COMPLETED")
         self.assertEqual(
             harness.goal_progression(),
             ["aisle_a", BLOCKED_WAYPOINT, REROUTE_TARGET, "aisle_c"],
@@ -286,6 +325,43 @@ class ReroutePauseResumeEndToEndTest(unittest.TestCase):
         self.assertEqual(payload["outcome"], "completed")
         self.assertEqual(payload["coverage"], 1.0)
         verify_report_integrity(self, payload, mission_dir)
+
+        correlated_evidence_ids = {
+            resumed_policy.evidence_id,
+            reroute_policy.evidence_id,
+        }
+        self.assertLessEqual(
+            correlated_evidence_ids,
+            {item.evidence_id for item in harness.evidence},
+        )
+        self.assertLessEqual(
+            correlated_evidence_ids,
+            {item.evidence_id for item in harness.assessments},
+        )
+        self.assertLessEqual(
+            correlated_evidence_ids,
+            {item.evidence_id for item in harness.policies},
+        )
+        self.assertLessEqual(
+            correlated_evidence_ids,
+            {state.last_evidence_id for state in harness.states if state.last_evidence_id},
+        )
+        for section in (
+            "evidence",
+            "assessments",
+            "policy_decisions",
+            "mission_states",
+        ):
+            self.assertLessEqual(
+                correlated_evidence_ids,
+                {
+                    record["evidence_id"]
+                    if section != "mission_states"
+                    else record["last_evidence_id"]
+                    for record in payload[section]
+                },
+                f"report lost cross-topic evidence correlation in {section}",
+            )
 
         recorded_waypoints = {record["waypoint"] for record in payload["evidence"]}
         self.assertTrue(

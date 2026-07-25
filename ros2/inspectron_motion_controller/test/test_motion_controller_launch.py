@@ -1,3 +1,5 @@
+import os
+import signal
 import time
 import unittest
 
@@ -6,8 +8,11 @@ import launch_ros.actions
 import launch_testing.actions
 import rclpy
 from geometry_msgs.msg import Twist
+from inspectron_mission_msgs.msg import MissionState
 from inspectron_safety_supervisor.msg import PolicyDecision
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+
+PREFIX = "/test/motion_controller_authority"
 
 
 def generate_test_description():
@@ -16,10 +21,17 @@ def generate_test_description():
         executable="motion_controller_node",
         name="motion_controller",
         output="screen",
+        remappings=[
+            ("/inspectron/policy_decision", f"{PREFIX}/inspectron/policy_decision"),
+            ("/inspectron/mission/state", f"{PREFIX}/inspectron/mission/state"),
+            ("/inspectron/desired_cmd_vel", f"{PREFIX}/inspectron/desired_cmd_vel"),
+            ("/cmd_vel", f"{PREFIX}/cmd_vel"),
+        ],
         parameters=[
             {
-                "policy_timeout_ms": 300,
+                "policy_timeout_ms": 600,
                 "command_timeout_ms": 500,
+                "mission_state_timeout_ms": 1000,
                 "slow_scale": 0.35,
                 "max_linear_speed": 0.40,
                 "max_angular_speed": 0.80,
@@ -28,11 +40,14 @@ def generate_test_description():
         ],
     )
 
-    return launch.LaunchDescription(
-        [
-            controller,
-            launch_testing.actions.ReadyToTest(),
-        ]
+    return (
+        launch.LaunchDescription(
+            [
+                controller,
+                launch_testing.actions.ReadyToTest(),
+            ]
+        ),
+        {"controller": controller},
     )
 
 
@@ -55,17 +70,22 @@ class MotionControllerGraphTest(unittest.TestCase):
 
         self.policy_publisher = self.node.create_publisher(
             PolicyDecision,
-            "/inspectron/policy_decision",
+            f"{PREFIX}/inspectron/policy_decision",
+            policy_qos,
+        )
+        self.state_publisher = self.node.create_publisher(
+            MissionState,
+            f"{PREFIX}/inspectron/mission/state",
             policy_qos,
         )
         self.command_publisher = self.node.create_publisher(
             Twist,
-            "/inspectron/desired_cmd_vel",
+            f"{PREFIX}/inspectron/desired_cmd_vel",
             10,
         )
         self.output_subscription = self.node.create_subscription(
             Twist,
-            "/cmd_vel",
+            f"{PREFIX}/cmd_vel",
             self.outputs.append,
             10,
         )
@@ -73,15 +93,32 @@ class MotionControllerGraphTest(unittest.TestCase):
         self._wait_until(
             lambda: (
                 self.policy_publisher.get_subscription_count() > 0
+                and self.state_publisher.get_subscription_count() > 0
                 and self.command_publisher.get_subscription_count() > 0
             ),
             timeout_seconds=5.0,
             failure_message="controller subscriptions were not discovered",
         )
+        self._assert_live_authority_subscriptions_are_volatile()
 
     def tearDown(self):
+        for _ in range(3):
+            self._publish_state(
+                MissionState.STATE_IDLE,
+                motion_authorized=False,
+                evidence_id="",
+                active_goal="",
+            )
+            self._publish_policy(
+                PolicyDecision.ACTION_STOP,
+                evidence_id="",
+            )
+            self._publish_command(0.0, 0.0)
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
         self.node.destroy_subscription(self.output_subscription)
         self.node.destroy_publisher(self.command_publisher)
+        self.node.destroy_publisher(self.state_publisher)
         self.node.destroy_publisher(self.policy_publisher)
         self.node.destroy_node()
 
@@ -114,18 +151,194 @@ class MotionControllerGraphTest(unittest.TestCase):
         )
         return matched[-1]
 
-    def _publish_policy(self, action, status=PolicyDecision.STATUS_VALID):
+    def _assert_live_authority_subscriptions_are_volatile(self):
+        for topic in (
+            f"{PREFIX}/inspectron/policy_decision",
+            f"{PREFIX}/inspectron/mission/state",
+        ):
+            endpoints = self.node.get_subscriptions_info_by_topic(topic)
+            self.assertEqual(
+                len(endpoints),
+                1,
+                f"expected one controller subscription on {topic}",
+            )
+            self.assertEqual(
+                endpoints[0].qos_profile.durability,
+                DurabilityPolicy.VOLATILE,
+                f"controller authority subscription on {topic} accepts durable history",
+            )
+
+    def _publish_policy(
+        self,
+        action,
+        status=PolicyDecision.STATUS_VALID,
+        *,
+        evidence_id="aisle_a-1.000000000-000001",
+    ):
         decision = PolicyDecision()
         decision.status = status
         decision.action = action
-        decision.evidence_id = "motion_graph_test"
+        decision.evidence_id = evidence_id
         self.policy_publisher.publish(decision)
+
+    def _publish_state(
+        self,
+        state=MissionState.STATE_MOVING,
+        *,
+        motion_authorized=True,
+        evidence_id="aisle_a-1.000000000-000001",
+        active_goal="aisle_a",
+    ):
+        message = MissionState()
+        message.state = state
+        message.motion_authorized = motion_authorized
+        message.last_evidence_id = evidence_id
+        message.active_goal = active_goal
+        self.state_publisher.publish(message)
 
     def _publish_command(self, linear_x=0.20, angular_z=0.40):
         command = Twist()
         command.linear.x = linear_x
         command.angular.z = angular_z
         self.command_publisher.publish(command)
+
+    def _publish_channels(self, channels, evidence_id):
+        if "mission" in channels:
+            self._publish_state(evidence_id=evidence_id)
+        if "command" in channels:
+            self._publish_command()
+        if "policy" in channels:
+            self._publish_policy(
+                PolicyDecision.ACTION_PROCEED,
+                evidence_id=evidence_id,
+            )
+
+    def _wait_for_authorized_motion(self, evidence_id, description):
+        start_index = len(self.outputs)
+        deadline = time.monotonic() + 5.0
+
+        while time.monotonic() < deadline:
+            self._publish_channels(
+                {"policy", "mission", "command"},
+                evidence_id,
+            )
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
+            if any(self._matches(command, 0.20, 0.40) for command in self.outputs[start_index:]):
+                return
+
+        self.fail(f"timed out waiting for {description}")
+
+    def _queue_aged_channel(
+        self,
+        controller,
+        channel,
+        evidence_id,
+        *,
+        age_seconds,
+    ):
+        controller_pid = controller.process_details["pid"]
+        os.kill(controller_pid, signal.SIGSTOP)
+        try:
+            self._publish_channels({channel}, evidence_id)
+            age_deadline = time.monotonic() + age_seconds
+
+            while time.monotonic() < age_deadline:
+                rclpy.spin_once(self.node, timeout_sec=0.02)
+
+            output_marker = len(self.outputs)
+        finally:
+            os.kill(controller_pid, signal.SIGCONT)
+
+        return output_marker
+
+    def _publish_fresh_other_channels(self, delayed_channel, evidence_id):
+        self._publish_channels(
+            {"policy", "mission", "command"} - {delayed_channel},
+            evidence_id,
+        )
+
+    def _assert_expired_channel_fails_closed(
+        self,
+        controller,
+        channel,
+        evidence_id,
+    ):
+        self._wait_for_authorized_motion(
+            evidence_id,
+            f"motion before delaying {channel}",
+        )
+        output_marker = self._queue_aged_channel(
+            controller,
+            channel,
+            evidence_id,
+            age_seconds=1.2,
+        )
+        observation_deadline = time.monotonic() + 0.75
+
+        while time.monotonic() < observation_deadline:
+            self._publish_fresh_other_channels(channel, evidence_id)
+            rclpy.spin_once(self.node, timeout_sec=0.02)
+
+        denied_outputs = self.outputs[output_marker:]
+        self.assertGreaterEqual(
+            len(denied_outputs),
+            8,
+            f"controller produced too few samples after delayed {channel}",
+        )
+        self.assertTrue(
+            all(self._is_zero(command) for command in denied_outputs),
+            f"expired delayed {channel} revived motion",
+        )
+
+    def _assert_partially_aged_channel_keeps_deadline(
+        self,
+        controller,
+        channel,
+        evidence_id,
+        *,
+        age_seconds,
+        expiry_deadline_seconds,
+    ):
+        self._wait_for_authorized_motion(
+            evidence_id,
+            f"motion before partially delaying {channel}",
+        )
+        output_marker = self._queue_aged_channel(
+            controller,
+            channel,
+            evidence_id,
+            age_seconds=age_seconds,
+        )
+        expiry_deadline = time.monotonic() + expiry_deadline_seconds
+        scan_index = output_marker
+        motion_samples = 0
+        zero_after_motion = False
+
+        while time.monotonic() < expiry_deadline:
+            self._publish_fresh_other_channels(channel, evidence_id)
+            rclpy.spin_once(self.node, timeout_sec=0.02)
+
+            for command in self.outputs[scan_index:]:
+                if self._matches(command, 0.20, 0.40):
+                    motion_samples += 1
+                elif motion_samples >= 2 and self._is_zero(command):
+                    zero_after_motion = True
+                    break
+
+            scan_index = len(self.outputs)
+            if zero_after_motion:
+                break
+
+        self.assertGreaterEqual(
+            motion_samples,
+            2,
+            f"partially aged {channel} was not admitted before its original deadline",
+        )
+        self.assertTrue(
+            zero_after_motion,
+            f"partially aged {channel} received a new watchdog lifetime",
+        )
 
     @staticmethod
     def _is_zero(command):
@@ -135,12 +348,94 @@ class MotionControllerGraphTest(unittest.TestCase):
     def _matches(command, linear_x, angular_z):
         return abs(command.linear.x - linear_x) < 1e-9 and abs(command.angular.z - angular_z) < 1e-9
 
+    def _assert_zero_while_inputs_stay_fresh(
+        self,
+        description,
+        *,
+        evidence_id="aisle_a-1.000000000-000001",
+        duration_seconds=0.35,
+    ):
+        self._wait_for_output(
+            self._is_zero,
+            f"{description} initial zero command",
+        )
+        start_index = len(self.outputs)
+        deadline = time.monotonic() + duration_seconds
+
+        while time.monotonic() < deadline:
+            self._publish_command()
+            self._publish_policy(
+                PolicyDecision.ACTION_PROCEED,
+                evidence_id=evidence_id,
+            )
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
+        denied_outputs = self.outputs[start_index:]
+        self.assertGreaterEqual(
+            len(denied_outputs),
+            3,
+            f"controller produced too few samples during {description}",
+        )
+        self.assertTrue(
+            all(self._is_zero(command) for command in denied_outputs),
+            f"controller allowed motion during {description}",
+        )
+
+    def _assert_zero_while_command_stays_fresh(
+        self,
+        description,
+        *,
+        duration_seconds=0.35,
+    ):
+        start_index = len(self.outputs)
+        deadline = time.monotonic() + duration_seconds
+
+        while time.monotonic() < deadline:
+            self._publish_command()
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
+        denied_outputs = self.outputs[start_index:]
+        self.assertGreaterEqual(
+            len(denied_outputs),
+            3,
+            f"controller produced too few samples during {description}",
+        )
+        self.assertTrue(
+            all(self._is_zero(command) for command in denied_outputs),
+            f"controller replayed cached authority during {description}",
+        )
+
     def test_policy_gates_motion_and_watchdogs_fail_closed(self):
         self._wait_for_output(
             self._is_zero,
             "startup zero command",
         )
 
+        self._assert_zero_while_command_stays_fresh("controller startup")
+
+        self._publish_command()
+        self._publish_policy(PolicyDecision.ACTION_PROCEED)
+        self._assert_zero_while_inputs_stay_fresh("missing mission state")
+
+        self._publish_state(
+            MissionState.STATE_MOVING,
+            motion_authorized=False,
+        )
+        self._assert_zero_while_inputs_stay_fresh("revoked mission authority")
+
+        self._publish_state(evidence_id="aisle_a-1.100000000-000002")
+        self._assert_zero_while_inputs_stay_fresh("mismatched mission evidence")
+
+        self._publish_state(evidence_id="")
+        self._assert_zero_while_inputs_stay_fresh(
+            "empty correlated evidence",
+            evidence_id="",
+        )
+
+        self._publish_state(active_goal="")
+        self._assert_zero_while_inputs_stay_fresh("missing active goal")
+
+        self._publish_state()
         self._publish_command()
         self._publish_policy(PolicyDecision.ACTION_PROCEED)
 
@@ -184,6 +479,7 @@ class MotionControllerGraphTest(unittest.TestCase):
             "invalid-policy stop command",
         )
 
+        self._publish_state()
         self._publish_command()
         self._publish_policy(PolicyDecision.ACTION_PROCEED)
 
@@ -208,6 +504,7 @@ class MotionControllerGraphTest(unittest.TestCase):
             "policy watchdog did not publish zero velocity",
         )
 
+        self._publish_state()
         self._publish_command()
         self._publish_policy(PolicyDecision.ACTION_PROCEED)
 
@@ -231,3 +528,87 @@ class MotionControllerGraphTest(unittest.TestCase):
             command_timeout_observed,
             "command watchdog did not publish zero velocity",
         )
+
+        non_authorizing_states = (
+            MissionState.STATE_IDLE,
+            MissionState.STATE_WAITING_FOR_POLICY,
+            MissionState.STATE_PAUSED,
+            MissionState.STATE_INSPECTING_CLOSER,
+            MissionState.STATE_REROUTING,
+            MissionState.STATE_SAFETY_STOPPED,
+            MissionState.STATE_COMPLETED,
+            MissionState.STATE_ABORTED,
+            MissionState.STATE_EMERGENCY_STOPPED,
+            255,
+        )
+
+        for state in non_authorizing_states:
+            self._publish_state(
+                state,
+                motion_authorized=True,
+            )
+            self._assert_zero_while_inputs_stay_fresh(f"mission state {state}")
+
+        self._publish_state(
+            MissionState.STATE_MOVING,
+            motion_authorized=True,
+            evidence_id="aisle_a-2.000000000-000003",
+        )
+        self._assert_zero_while_inputs_stay_fresh(
+            "new mission evidence with old policy",
+        )
+
+        self._publish_command()
+        self._publish_policy(
+            PolicyDecision.ACTION_PROCEED,
+            evidence_id="aisle_a-2.000000000-000003",
+        )
+        self._wait_for_output(
+            lambda command: self._matches(command, 0.20, 0.40),
+            "motion after matching mission evidence",
+        )
+
+        mission_timeout_deadline = time.monotonic() + 1.5
+        mission_timeout_observed = False
+
+        while time.monotonic() < mission_timeout_deadline:
+            self._publish_command()
+            self._publish_policy(
+                PolicyDecision.ACTION_PROCEED,
+                evidence_id="aisle_a-2.000000000-000003",
+            )
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
+            if self.outputs and self._is_zero(self.outputs[-1]):
+                mission_timeout_observed = True
+                break
+
+        self.assertTrue(
+            mission_timeout_observed,
+            "mission-state watchdog did not publish zero velocity",
+        )
+
+    def test_delayed_inputs_fail_closed_and_keep_original_deadlines(self, controller):
+        for index, channel in enumerate(("policy", "mission", "command"), start=4):
+            self._assert_expired_channel_fails_closed(
+                controller,
+                channel,
+                f"aisle_a-{index}.000000000-00000{index}",
+            )
+
+        partial_cases = (
+            ("policy", 0.30, 0.45),
+            ("mission", 0.50, 0.75),
+            ("command", 0.25, 0.38),
+        )
+        for index, (channel, age_seconds, expiry_deadline_seconds) in enumerate(
+            partial_cases,
+            start=7,
+        ):
+            self._assert_partially_aged_channel_keeps_deadline(
+                controller,
+                channel,
+                f"aisle_a-{index}.000000000-00000{index}",
+                age_seconds=age_seconds,
+                expiry_deadline_seconds=expiry_deadline_seconds,
+            )

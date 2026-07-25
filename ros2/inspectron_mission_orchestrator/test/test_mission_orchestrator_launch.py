@@ -31,6 +31,7 @@ def generate_test_description():
                 "policy_timeout_ms": 1000,
                 "reroute_timeout_ms": 2000,
                 "watchdog_rate_hz": 20.0,
+                "state_heartbeat_rate_hz": 4.0,
             }
         ],
     )
@@ -200,6 +201,27 @@ class MissionOrchestratorGraphTest(unittest.TestCase):
             self._policy("aisle_a-1.000000000-000001"),
             MissionState.STATE_MOVING,
             active_goal="aisle_a",
+        )
+
+        self._wait_until(
+            lambda: any(
+                sum(
+                    1
+                    for candidate in self.states
+                    if candidate.state == MissionState.STATE_MOVING
+                    and candidate.active_goal == "aisle_a"
+                    and candidate.motion_authorized
+                    and candidate.updated_at.sec == message.updated_at.sec
+                    and candidate.updated_at.nanosec == message.updated_at.nanosec
+                )
+                >= 2
+                for message in self.states
+                if message.state == MissionState.STATE_MOVING
+                and message.active_goal == "aisle_a"
+                and message.motion_authorized
+            ),
+            timeout_seconds=3.0,
+            failure_message="authorized MOVING state was not heartbeated",
         )
 
         self._publish_until_state(

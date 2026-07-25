@@ -5,11 +5,14 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
 #include "geometry_msgs/msg/twist.hpp"
+#include "inspectron_mission_msgs/msg/mission_state.hpp"
 #include "inspectron_safety_supervisor/msg/policy_decision.hpp"
+#include "rclcpp/message_info.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace inspectron_motion_controller {
@@ -17,6 +20,7 @@ namespace inspectron_motion_controller {
 using inspectron::motion::MotionCommand;
 using inspectron::motion::MotionLimits;
 using inspectron::motion::PolicyMode;
+using MissionState = inspectron_mission_msgs::msg::MissionState;
 using PolicyDecision =
   inspectron_safety_supervisor::msg::PolicyDecision;
 
@@ -29,6 +33,8 @@ public:
       declare_parameter<std::int64_t>("policy_timeout_ms", 750);
     command_timeout_ms_ =
       declare_parameter<std::int64_t>("command_timeout_ms", 250);
+    mission_state_timeout_ms_ =
+      declare_parameter<std::int64_t>("mission_state_timeout_ms", 1000);
     control_rate_hz_ =
       declare_parameter<double>("control_rate_hz", 20.0);
 
@@ -44,17 +50,27 @@ public:
     command_publisher_ =
       create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
-    rclcpp::QoS policy_qos(1);
-    policy_qos.reliable();
-    policy_qos.transient_local();
+    rclcpp::QoS live_authority_qos(1);
+    live_authority_qos.reliable();
+    live_authority_qos.durability_volatile();
 
     policy_subscription_ = create_subscription<PolicyDecision>(
       "/inspectron/policy_decision",
-      policy_qos,
+      live_authority_qos,
       std::bind(
         &MotionControllerNode::on_policy_decision,
         this,
-        std::placeholders::_1));
+        std::placeholders::_1,
+        std::placeholders::_2));
+
+    mission_state_subscription_ = create_subscription<MissionState>(
+      "/inspectron/mission/state",
+      live_authority_qos,
+      std::bind(
+        &MotionControllerNode::on_mission_state,
+        this,
+        std::placeholders::_1,
+        std::placeholders::_2));
 
     desired_command_subscription_ =
       create_subscription<geometry_msgs::msg::Twist>(
@@ -63,7 +79,8 @@ public:
         std::bind(
           &MotionControllerNode::on_desired_command,
           this,
-          std::placeholders::_1));
+          std::placeholders::_1,
+          std::placeholders::_2));
 
     const auto timer_period =
       std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -76,9 +93,11 @@ public:
     RCLCPP_INFO(
       get_logger(),
       "Fail-closed motion controller active: "
-      "policy_timeout_ms=%ld command_timeout_ms=%ld rate_hz=%.1f",
+      "policy_timeout_ms=%ld command_timeout_ms=%ld "
+      "mission_state_timeout_ms=%ld rate_hz=%.1f",
       static_cast<long>(policy_timeout_ms_),
       static_cast<long>(command_timeout_ms_),
+      static_cast<long>(mission_state_timeout_ms_),
       control_rate_hz_);
   }
 
@@ -93,6 +112,11 @@ private:
     if (command_timeout_ms_ <= 0) {
       throw std::invalid_argument(
               "command_timeout_ms must be positive");
+    }
+
+    if (mission_state_timeout_ms_ <= 0) {
+      throw std::invalid_argument(
+              "mission_state_timeout_ms must be positive");
     }
 
     if (!std::isfinite(control_rate_hz_) || control_rate_hz_ <= 0.0) {
@@ -120,11 +144,90 @@ private:
     }
   }
 
-  void on_policy_decision(
-    const PolicyDecision::SharedPtr decision)
+  [[nodiscard]] std::optional<
+    std::chrono::steady_clock::time_point>
+  message_steady_reference(
+    const rclcpp::MessageInfo & message_info,
+    const std::int64_t timeout_ms) const
   {
-    policy_received_at_ = std::chrono::steady_clock::now();
+    const auto steady_now = std::chrono::steady_clock::now();
+    const auto now_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count();
+    const auto timeout_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::milliseconds(timeout_ms)).count();
+    const auto & metadata = message_info.get_rmw_message_info();
+
+    const auto timestamp_age =
+      [now_ns, timeout_ns](
+      const std::int64_t timestamp_ns)
+      -> std::optional<std::int64_t> {
+        if (timestamp_ns <= 0 || timestamp_ns > now_ns) {
+          return std::nullopt;
+        }
+
+        const auto age_ns = now_ns - timestamp_ns;
+        if (age_ns > timeout_ns) {
+          return std::nullopt;
+        }
+
+        return age_ns;
+      };
+
+    const auto source_age =
+      timestamp_age(metadata.source_timestamp);
+    const auto received_age =
+      timestamp_age(metadata.received_timestamp);
+
+    if (!source_age || !received_age) {
+      return std::nullopt;
+    }
+
+    const auto metadata_age = std::chrono::nanoseconds(
+      *source_age >= *received_age ?
+      *source_age : *received_age);
+    return steady_now - metadata_age;
+  }
+
+  void revoke_policy()
+  {
+    has_policy_ = false;
+    policy_valid_ = false;
+    policy_mode_ = PolicyMode::Stop;
+    policy_evidence_id_.clear();
+  }
+
+  void revoke_mission_authority()
+  {
+    has_mission_state_ = false;
+    mission_state_ = MissionState::STATE_IDLE;
+    motion_authorized_ = false;
+    active_goal_.clear();
+    mission_evidence_id_.clear();
+  }
+
+  void revoke_desired_command()
+  {
+    has_command_ = false;
+    desired_command_ = {};
+  }
+
+  void on_policy_decision(
+    const PolicyDecision::SharedPtr decision,
+    const rclcpp::MessageInfo & message_info)
+  {
+    const auto steady_reference =
+      message_steady_reference(message_info, policy_timeout_ms_);
+
+    if (!steady_reference) {
+      revoke_policy();
+      return;
+    }
+
+    policy_received_at_ = *steady_reference;
     has_policy_ = true;
+    policy_evidence_id_ = decision->evidence_id;
     policy_valid_ =
       decision->status == PolicyDecision::STATUS_VALID;
 
@@ -149,12 +252,43 @@ private:
     }
   }
 
-  void on_desired_command(
-    const geometry_msgs::msg::Twist::SharedPtr command)
+  void on_mission_state(
+    const MissionState::SharedPtr state,
+    const rclcpp::MessageInfo & message_info)
   {
+    const auto steady_reference =
+      message_steady_reference(
+      message_info,
+      mission_state_timeout_ms_);
+
+    if (!steady_reference) {
+      revoke_mission_authority();
+      return;
+    }
+
+    mission_state_received_at_ = *steady_reference;
+    has_mission_state_ = true;
+    mission_state_ = state->state;
+    motion_authorized_ = state->motion_authorized;
+    active_goal_ = state->active_goal;
+    mission_evidence_id_ = state->last_evidence_id;
+  }
+
+  void on_desired_command(
+    const geometry_msgs::msg::Twist::SharedPtr command,
+    const rclcpp::MessageInfo & message_info)
+  {
+    const auto steady_reference =
+      message_steady_reference(message_info, command_timeout_ms_);
+
+    if (!steady_reference) {
+      revoke_desired_command();
+      return;
+    }
+
     desired_command_.linear_x = command->linear.x;
     desired_command_.angular_z = command->angular.z;
-    command_received_at_ = std::chrono::steady_clock::now();
+    command_received_at_ = *steady_reference;
     has_command_ = true;
   }
 
@@ -172,11 +306,24 @@ private:
       now - command_received_at_ <=
       std::chrono::milliseconds(command_timeout_ms_);
 
+    const bool mission_state_fresh =
+      has_mission_state_ &&
+      now - mission_state_received_at_ <=
+      std::chrono::milliseconds(mission_state_timeout_ms_);
+
+    const bool mission_authorized =
+      mission_state_fresh &&
+      mission_state_ == MissionState::STATE_MOVING &&
+      motion_authorized_ &&
+      !active_goal_.empty() &&
+      !mission_evidence_id_.empty() &&
+      mission_evidence_id_ == policy_evidence_id_;
+
     const MotionCommand safe_command =
       inspectron::motion::enforce_motion_policy(
       desired_command_,
       policy_mode_,
-      policy_valid_,
+      policy_valid_ && mission_authorized,
       policy_fresh,
       command_fresh,
       limits_);
@@ -189,6 +336,7 @@ private:
 
   std::int64_t policy_timeout_ms_{750};
   std::int64_t command_timeout_ms_{250};
+  std::int64_t mission_state_timeout_ms_{1000};
   double control_rate_hz_{20.0};
 
   MotionLimits limits_{};
@@ -197,16 +345,27 @@ private:
 
   bool has_policy_{false};
   bool has_command_{false};
+  bool has_mission_state_{false};
   bool policy_valid_{false};
+  bool motion_authorized_{false};
+
+  std::uint8_t mission_state_{MissionState::STATE_IDLE};
+  std::string active_goal_{};
+  std::string mission_evidence_id_{};
+  std::string policy_evidence_id_{};
 
   std::chrono::steady_clock::time_point policy_received_at_{};
   std::chrono::steady_clock::time_point command_received_at_{};
+  std::chrono::steady_clock::time_point mission_state_received_at_{};
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr
     command_publisher_;
 
   rclcpp::Subscription<PolicyDecision>::SharedPtr
     policy_subscription_;
+
+  rclcpp::Subscription<MissionState>::SharedPtr
+    mission_state_subscription_;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr
     desired_command_subscription_;

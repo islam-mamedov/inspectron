@@ -37,7 +37,7 @@ def generate_test_description():
         fixture_response_json=scenario.fixture_response_json,
         report_directory=str(REPORT_ROOT),
         scene_id="e2e_fault_authority",
-        desired_velocity_mode=scenario.desired_velocity_mode,
+        desired_velocity_mode="always",
         auto_start=False,
         abort_on_safety_stop=False,
         prefix=PREFIX,
@@ -112,6 +112,24 @@ class AuthorityFaultTest(unittest.TestCase):
             failure_message="cmd_vel did not settle to zero",
             test_case=self,
         )
+        output_marker = len(harness.cmd_vels)
+        desired_marker = len(harness.desired_cmd_vels)
+        harness.wait_until(
+            lambda: (
+                len(harness.cmd_vels) >= output_marker + 5
+                and len(harness.desired_cmd_vels) >= desired_marker + 5
+                and all(not is_nonzero_twist(twist) for twist in harness.cmd_vels[output_marker:])
+                and all(
+                    is_nonzero_twist(twist) for twist in harness.desired_cmd_vels[desired_marker:]
+                )
+            ),
+            timeout_seconds=15.0,
+            failure_message=(
+                "nonzero desired velocity did not remain fresh and fully blocked "
+                "after motion authority was revoked"
+            ),
+            test_case=self,
+        )
 
     def _abort_and_finalize(self, marker, expected_finalized):
         harness = self.harness
@@ -129,6 +147,7 @@ class AuthorityFaultTest(unittest.TestCase):
             timeout_seconds=15.0,
             failure_message="mission never entered ABORTED after operator abort",
         )
+        self._wait_zero_tail()
         self._wait_finalized_count(expected_finalized)
 
     def _wait_finalized_count(self, expected_finalized):
