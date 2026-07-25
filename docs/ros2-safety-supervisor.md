@@ -43,12 +43,45 @@ flag, input-health status, evidence identifier, source observation time, and
 decision time. The output publisher is reliable and transient-local so a late
 subscriber receives the most recent safety state.
 
+Before admitting an assessment, the supervisor validates three independent
+timestamps against `assessment_timeout_ms`:
+
+- `SceneAssessment.observed_at`, using the node's ROS clock;
+- the DDS publication timestamp, using the system clock;
+- the DDS receipt timestamp, using the system clock.
+
+Zero, malformed, future-dated, expired, or unavailable temporal metadata
+produces an immediate `STATUS_STALE` `stop` decision and does not refresh the
+watchdog. For an admitted assessment, the oldest of those three ages is
+deducted from its steady-clock lifetime. Delivery therefore never grants an
+already-aged observation a second full watchdog period. Subsequent ROS or
+system clock changes cannot extend the admitted lease.
+
+Admitted observation times must also advance strictly. A duplicate or older
+assessment produces `STATUS_STALE` `stop` and cannot overwrite a newer
+fail-closed result when asynchronous inference completes out of order.
+A new temporal fault opens a recovery barrier at the local rejection time;
+recovery then requires an observation captured after that barrier. A
+well-formed sample already on or before an active barrier is rejected without
+moving the barrier again, so a slow queue of pre-stop inference results cannot
+chase and starve a legitimate post-stop observation.
+
+Future-dated observations are also held in a bounded replay cache. Replaying
+the same timestamp after the ROS clock catches up remains fail-closed. More
+than 256 distinct future timestamps starts a fail-closed quarantine for twice
+`assessment_timeout_ms`; future inputs extend it, and its release opens a new
+local recovery barrier. This is bounded operational replay defense, not
+permanent message identity: durable replay protection across an arbitrary
+future interval or process restart requires a publisher session identifier
+and monotonic source sequence in the message protocol.
+
 ## Fail-closed behavior
 
 The supervisor publishes `stop` when:
 
 - the C++ policy detects an invalid probability or enum value;
 - a critical hazard is reported;
+- an assessment has missing, future, or expired temporal metadata;
 - no assessment arrives before the watchdog timeout;
 - an established assessment stream becomes stale.
 
@@ -61,6 +94,17 @@ The supervisor cannot stop for a hazard that perception completely misses. The
 42-scene benchmark exposed this enforcement boundary, so the ROS 2 adapter does
 not present deterministic policy as a replacement for perception quality.
 
+Publishers must set `observed_at` to the source observation time and preserve
+that value through inference and transport. Publisher and supervisor system
+clocks must be synchronized for DDS publication-age validation; camera/ROS
+clocks must likewise share the supervisor's ROS time domain. Clock skew and
+missing timestamp support fail closed.
+
+The Inspectron perception bridge preserves the camera acquisition timestamp
+through asynchronous inference. Any replacement perception publisher must
+honor the same contract; stamping inference completion time would conceal the
+age this lease is designed to bound.
+
 ## Parameters
 
 | Parameter | Default | Meaning |
@@ -69,7 +113,7 @@ not present deterministic policy as a replacement for perception quality.
 | `decision_topic` | `/inspectron/policy_decision` | Enforced decision topic |
 | `confidence_threshold` | `0.70` | Minimum accepted model confidence |
 | `view_quality_threshold` | `0.60` | Minimum accepted image quality |
-| `assessment_timeout_ms` | `1500` | Maximum time without an assessment |
+| `assessment_timeout_ms` | `1500` | Maximum temporal-metadata age and time without an admitted assessment |
 
 ## Build in ROS 2 Jazzy
 
@@ -109,6 +153,7 @@ This milestone provides:
 - direct reuse of the C++ safety core;
 - reliable, transient-local decisions;
 - invalid-input rejection;
+- source-observation and DDS metadata freshness admission;
 - a steady-clock perception watchdog;
 - message conversion tests;
 - a graph-level launch test covering valid, invalid, and stale input;

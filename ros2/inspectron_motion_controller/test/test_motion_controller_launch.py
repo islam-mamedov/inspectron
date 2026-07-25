@@ -174,11 +174,28 @@ class MotionControllerGraphTest(unittest.TestCase):
         status=PolicyDecision.STATUS_VALID,
         *,
         evidence_id="aisle_a-1.000000000-000001",
+        source_age_seconds=0.0,
+        source_time_ns=None,
+        source_stamp=None,
     ):
         decision = PolicyDecision()
         decision.status = status
         decision.action = action
         decision.evidence_id = evidence_id
+        if source_stamp is not None:
+            (
+                decision.source_observed_at.sec,
+                decision.source_observed_at.nanosec,
+            ) = source_stamp
+        elif source_time_ns is None:
+            source_time_ns = self.node.get_clock().now().nanoseconds - int(
+                source_age_seconds * 1_000_000_000
+            )
+            decision.source_observed_at.sec = source_time_ns // 1_000_000_000
+            decision.source_observed_at.nanosec = source_time_ns % 1_000_000_000
+        elif source_time_ns > 0:
+            decision.source_observed_at.sec = source_time_ns // 1_000_000_000
+            decision.source_observed_at.nanosec = source_time_ns % 1_000_000_000
         self.policy_publisher.publish(decision)
 
     def _publish_state(
@@ -612,3 +629,222 @@ class MotionControllerGraphTest(unittest.TestCase):
                 age_seconds=age_seconds,
                 expiry_deadline_seconds=expiry_deadline_seconds,
             )
+
+    def test_policy_observation_time_fails_closed_and_keeps_deadline(
+        self,
+    ):
+        settle_deadline = time.monotonic() + 0.35
+        while time.monotonic() < settle_deadline:
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+        partial_evidence_id = "aisle_a-15.000000000-000015"
+        source_time_ns = self.node.get_clock().now().nanoseconds - 200_000_000
+        start_index = len(self.outputs)
+        self._publish_state(evidence_id=partial_evidence_id)
+        self._publish_command()
+        self._publish_policy(
+            PolicyDecision.ACTION_PROCEED,
+            evidence_id=partial_evidence_id,
+            source_time_ns=source_time_ns,
+        )
+        authorization_deadline = time.monotonic() + 0.20
+
+        while time.monotonic() < authorization_deadline:
+            self._publish_state(evidence_id=partial_evidence_id)
+            self._publish_command()
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+            if any(self._matches(command, 0.20, 0.40) for command in self.outputs[start_index:]):
+                break
+        else:
+            self.fail("partially aged observation was not admitted before its original deadline")
+
+        moving_at = time.monotonic()
+        zero_observed = False
+        expiry_deadline = moving_at + 0.55
+
+        while time.monotonic() < expiry_deadline:
+            self._publish_state(evidence_id=partial_evidence_id)
+            self._publish_command()
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+            if self.outputs and self._is_zero(self.outputs[-1]):
+                zero_observed = True
+                break
+
+        self.assertTrue(
+            zero_observed,
+            "partially aged observation received a new policy lifetime",
+        )
+        self.assertLess(
+            time.monotonic() - moving_at,
+            0.48,
+            "policy expired later than its source-observation deadline",
+        )
+
+        barrier_evidence_id = "aisle_a-16.000000000-000016"
+        self._wait_for_authorized_motion(
+            barrier_evidence_id,
+            "motion before missing-time recovery barrier",
+        )
+        pre_stop_source_ns = self.node.get_clock().now().nanoseconds
+        output_marker = len(self.outputs)
+        self._publish_state(evidence_id=barrier_evidence_id)
+        self._publish_command()
+        self._publish_policy(
+            PolicyDecision.ACTION_PROCEED,
+            evidence_id=barrier_evidence_id,
+            source_time_ns=0,
+        )
+        rejection_deadline = time.monotonic() + 0.5
+        while time.monotonic() < rejection_deadline:
+            self._publish_state(evidence_id=barrier_evidence_id)
+            self._publish_command()
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+            if any(self._is_zero(command) for command in self.outputs[output_marker:]):
+                break
+        else:
+            self.fail("missing observation time did not revoke active motion")
+
+        post_stop_source_ns = self.node.get_clock().now().nanoseconds
+
+        output_marker = len(self.outputs)
+        older_deadline = time.monotonic() + 0.15
+        while time.monotonic() < older_deadline:
+            self._publish_state(evidence_id=barrier_evidence_id)
+            self._publish_command()
+            self._publish_policy(
+                PolicyDecision.ACTION_PROCEED,
+                evidence_id=barrier_evidence_id,
+                source_time_ns=pre_stop_source_ns,
+            )
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+        self.assertTrue(
+            self.outputs[output_marker:],
+            "pre-stop in-flight policy produced no controller output",
+        )
+        self.assertTrue(
+            all(self._is_zero(command) for command in self.outputs[output_marker:]),
+            "pre-stop in-flight policy restored motion",
+        )
+
+        output_marker = len(self.outputs)
+        self._publish_state(evidence_id=barrier_evidence_id)
+        self._publish_command()
+        self._publish_policy(
+            PolicyDecision.ACTION_PROCEED,
+            evidence_id=barrier_evidence_id,
+            source_time_ns=post_stop_source_ns,
+        )
+        recovery_deadline = time.monotonic() + 0.35
+        while time.monotonic() < recovery_deadline:
+            self._publish_state(evidence_id=barrier_evidence_id)
+            self._publish_command()
+            rclpy.spin_once(self.node, timeout_sec=0.03)
+
+            if any(self._matches(command, 0.20, 0.40) for command in self.outputs[output_marker:]):
+                break
+        else:
+            self.fail("post-stop observation was blocked by a later older callback")
+
+        future_source_ns = self.node.get_clock().now().nanoseconds + 200_000_000
+        rejected_sources = (
+            ("future", {"source_time_ns": future_source_ns}),
+            ("negative", {"source_stamp": (-1, 0)}),
+            (
+                "malformed",
+                {"source_stamp": (1, 1_000_000_000)},
+            ),
+            ("expired", {"source_age_seconds": 0.8}),
+        )
+
+        for index, (description, source_arguments) in enumerate(
+            rejected_sources,
+            start=20,
+        ):
+            with self.subTest(description=description):
+                evidence_id = f"aisle_a-{index}.000000000-0000{index}"
+                start_index = len(self.outputs)
+                deadline = time.monotonic() + 0.4
+
+                while time.monotonic() < deadline:
+                    self._publish_state(evidence_id=evidence_id)
+                    self._publish_command()
+                    self._publish_policy(
+                        PolicyDecision.ACTION_PROCEED,
+                        evidence_id=evidence_id,
+                        **source_arguments,
+                    )
+                    rclpy.spin_once(self.node, timeout_sec=0.04)
+
+                denied_outputs = self.outputs[start_index:]
+                self.assertGreaterEqual(
+                    len(denied_outputs),
+                    3,
+                    f"too few samples for {description} observation time",
+                )
+                self.assertTrue(
+                    all(self._is_zero(command) for command in denied_outputs),
+                    f"{description} observation time authorized motion",
+                )
+                if description == "future":
+                    self.assertGreater(
+                        self.node.get_clock().now().nanoseconds,
+                        future_source_ns,
+                        "future replay test ended before ROS clock catch-up",
+                    )
+
+        self._wait_for_authorized_motion(
+            "aisle_a-24.000000000-000024",
+            "fresh recovery after temporal rejection",
+        )
+
+        stop_evidence_id = "aisle_a-25.000000000-000025"
+        stop_source_ns = self.node.get_clock().now().nanoseconds
+        self._publish_state(evidence_id=stop_evidence_id)
+        self._publish_command()
+        self._publish_policy(
+            PolicyDecision.ACTION_STOP,
+            evidence_id=stop_evidence_id,
+            source_time_ns=stop_source_ns,
+        )
+        self._wait_for_output(
+            self._is_zero,
+            "newer policy stop before replay attempts",
+        )
+
+        replay_cases = (
+            ("duplicate", stop_source_ns),
+            ("older", stop_source_ns - 100_000_000),
+        )
+        for index, (description, replay_source_ns) in enumerate(
+            replay_cases,
+            start=26,
+        ):
+            evidence_id = f"aisle_a-{index}.000000000-0000{index}"
+            output_marker = len(self.outputs)
+            deadline = time.monotonic() + 0.35
+
+            while time.monotonic() < deadline:
+                self._publish_state(evidence_id=evidence_id)
+                self._publish_command()
+                self._publish_policy(
+                    PolicyDecision.ACTION_PROCEED,
+                    evidence_id=evidence_id,
+                    source_time_ns=replay_source_ns,
+                )
+                rclpy.spin_once(self.node, timeout_sec=0.03)
+
+            denied_outputs = self.outputs[output_marker:]
+            self.assertGreaterEqual(len(denied_outputs), 3)
+            self.assertTrue(
+                all(self._is_zero(command) for command in denied_outputs),
+                f"{description} policy observation revived motion",
+            )
+
+        self._wait_for_authorized_motion(
+            "aisle_a-28.000000000-000028",
+            "fresh recovery after policy replay rejection",
+        )

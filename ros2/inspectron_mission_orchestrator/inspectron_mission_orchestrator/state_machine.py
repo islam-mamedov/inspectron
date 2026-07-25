@@ -238,6 +238,7 @@ class MissionStateMachine:
         status: int,
         evidence_id: str,
         now: float,
+        policy_reference: float | None = None,
     ) -> TransitionResult:
         if self._state in {
             MissionPhase.IDLE,
@@ -252,7 +253,7 @@ class MissionStateMachine:
             return self._safety_stop("Policy evidence does not match the active mission goal")
 
         self._last_evidence_id = evidence_id
-        self._last_policy_at = now
+        self._last_policy_at = now if policy_reference is None else policy_reference
 
         if status != STATUS_VALID:
             self._latest_policy_allows_motion = False

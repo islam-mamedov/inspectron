@@ -34,6 +34,7 @@ STATE_TO_MESSAGE = {
     MissionPhase.ABORTED: MissionStateMessage.STATE_ABORTED,
     MissionPhase.EMERGENCY_STOPPED: (MissionStateMessage.STATE_EMERGENCY_STOPPED),
 }
+MAX_REJECTED_FUTURE_POLICY_OBSERVATIONS = 256
 
 
 class MissionOrchestratorNode(Node):
@@ -72,6 +73,12 @@ class MissionOrchestratorNode(Node):
             policy_timeout_seconds=policy_timeout_ms / 1000.0,
             reroute_timeout_seconds=reroute_timeout_ms / 1000.0,
         )
+        self.policy_timeout_seconds = policy_timeout_ms / 1000.0
+        self.policy_timeout_ns = policy_timeout_ms * 1_000_000
+        self._last_policy_observed_ns = 0
+        self._policy_recovery_barrier_ns = 0
+        self._rejected_future_policy_observations: set[int] = set()
+        self._rejected_future_policy_quarantine_until: float | None = None
 
         state_qos = QoSProfile(
             depth=1,
@@ -218,13 +225,177 @@ class MissionOrchestratorNode(Node):
         return self._service_response(response, self.machine.reset())
 
     def _on_policy(self, message: PolicyDecision) -> None:
+        now = time.monotonic()
+        source_reference = self._policy_source_reference(
+            message,
+            monotonic_now=now,
+        )
         result = self.machine.apply_policy(
             action=message.action,
-            status=message.status,
+            status=(
+                message.status if source_reference is not None else PolicyDecision.STATUS_STALE
+            ),
             evidence_id=message.evidence_id,
-            now=time.monotonic(),
+            now=now,
+            policy_reference=source_reference,
         )
         self._apply_transition(result)
+
+    def _policy_source_reference(
+        self,
+        message: PolicyDecision,
+        *,
+        monotonic_now: float,
+    ) -> float | None:
+        observed_at = message.source_observed_at
+        current_ns = self.get_clock().now().nanoseconds
+
+        if observed_at.sec < 0 or observed_at.nanosec >= 1_000_000_000:
+            self._reject_policy_source()
+            return None
+
+        observed_ns = observed_at.sec * 1_000_000_000 + observed_at.nanosec
+        self._prune_rejected_future_policy_observations(
+            current_ns,
+            monotonic_now,
+        )
+
+        was_rejected_exactly_while_future = observed_ns in self._rejected_future_policy_observations
+        future_quarantine_active = self._extend_future_policy_quarantine(
+            observed_ns,
+            current_ns,
+        )
+        if was_rejected_exactly_while_future or future_quarantine_active:
+            self._reject_cached_future_policy_source()
+            return None
+
+        if observed_ns <= 0:
+            self._reject_policy_source()
+            return None
+
+        if observed_ns > current_ns:
+            self._remember_rejected_future_policy_observation(
+                observed_ns,
+                current_ns,
+            )
+            self._reject_policy_source()
+            return None
+
+        blocked_by_existing_barrier = (
+            self._policy_recovery_barrier_ns > 0 and observed_ns <= self._policy_recovery_barrier_ns
+        )
+        if blocked_by_existing_barrier:
+            self._reject_policy_source(
+                advance_recovery_barrier=False,
+            )
+            return None
+
+        age_ns = current_ns - observed_ns
+
+        if age_ns > self.policy_timeout_ns:
+            self._reject_policy_source()
+            return None
+
+        if observed_ns <= self._last_policy_observed_ns:
+            self._reject_policy_source()
+            return None
+
+        self._last_policy_observed_ns = observed_ns
+        self._policy_recovery_barrier_ns = 0
+        self._rejected_future_policy_observations = {
+            rejected_ns
+            for rejected_ns in (self._rejected_future_policy_observations)
+            if rejected_ns > observed_ns
+        }
+        return monotonic_now - age_ns / 1_000_000_000
+
+    def _prune_rejected_future_policy_observations(
+        self,
+        current_ns: int,
+        monotonic_now: float,
+    ) -> None:
+        expired_before_ns = current_ns - self.policy_timeout_ns
+        retained = {
+            observation_ns
+            for observation_ns in self._rejected_future_policy_observations
+            if (
+                observation_ns >= expired_before_ns
+                and observation_ns > self._last_policy_observed_ns
+            )
+        }
+        opened_recovery_epoch = len(retained) != len(self._rejected_future_policy_observations)
+        self._rejected_future_policy_observations = retained
+        if (
+            self._rejected_future_policy_quarantine_until is not None
+            and monotonic_now > self._rejected_future_policy_quarantine_until
+        ):
+            self._rejected_future_policy_quarantine_until = None
+            opened_recovery_epoch = True
+        if opened_recovery_epoch:
+            self._policy_recovery_barrier_ns = max(
+                self._policy_recovery_barrier_ns,
+                current_ns,
+            )
+
+    def _remember_rejected_future_policy_observation(
+        self,
+        observed_ns: int,
+        current_ns: int,
+        monotonic_now: float | None = None,
+    ) -> None:
+        if monotonic_now is None:
+            monotonic_now = time.monotonic()
+
+        self._prune_rejected_future_policy_observations(
+            current_ns,
+            monotonic_now,
+        )
+        if self._rejected_future_policy_quarantine_until is not None:
+            return
+
+        self._rejected_future_policy_observations.add(observed_ns)
+        if len(self._rejected_future_policy_observations) > MAX_REJECTED_FUTURE_POLICY_OBSERVATIONS:
+            self._rejected_future_policy_observations.clear()
+            self._rejected_future_policy_quarantine_until = (
+                monotonic_now + self.policy_timeout_seconds * 2
+            )
+
+    def _extend_future_policy_quarantine(
+        self,
+        observed_ns: int,
+        current_ns: int,
+        monotonic_now: float | None = None,
+    ) -> bool:
+        if self._rejected_future_policy_quarantine_until is None:
+            return False
+
+        if observed_ns > current_ns:
+            if monotonic_now is None:
+                monotonic_now = time.monotonic()
+            self._rejected_future_policy_quarantine_until = max(
+                self._rejected_future_policy_quarantine_until,
+                monotonic_now + self.policy_timeout_seconds * 2,
+            )
+        return True
+
+    def _reject_cached_future_policy_source(self) -> None:
+        self._reject_policy_source(
+            advance_recovery_barrier=(self._policy_recovery_barrier_ns == 0),
+        )
+
+    def _reject_policy_source(
+        self,
+        *,
+        advance_recovery_barrier: bool = True,
+    ) -> None:
+        if not advance_recovery_barrier:
+            return
+
+        rejection_ns = self.get_clock().now().nanoseconds
+        self._policy_recovery_barrier_ns = max(
+            self._policy_recovery_barrier_ns,
+            rejection_ns,
+        )
 
     def _on_waypoint_reached(self, message: String) -> None:
         result = self.machine.waypoint_reached(message.data)

@@ -16,8 +16,16 @@ The camera frame ID is used as the waypoint. Each frame receives a unique
 evidence ID derived from the waypoint, image timestamp, and frame sequence.
 After a valid image enters the inference queue, the bridge publishes an
 `EvidenceCapture` containing the original compressed bytes and the same
-metadata and evidence ID used by the resulting assessment. Invalid or dropped
-frames do not create evidence captures.
+metadata and evidence ID used by the resulting assessment.
+
+`SceneAssessment.observed_at` records when the camera captured the image, not
+when VLM inference completed. The bridge preserves the input
+`CompressedImage.header.stamp` through its asynchronous inference queue and
+uses that same timestamp for the evidence capture and for successful or
+fail-closed assessments. A zero camera timestamp remains zero so downstream
+safety nodes reject the missing source time; bridge arrival time is never
+substituted for capture time. Invalid or dropped frames do not create evidence
+captures.
 
 ## Providers
 
@@ -56,6 +64,12 @@ The safety supervisor and motion controller prevent motion for this result.
 Only one inference request is queued at a time. Extra frames are dropped while
 inference is active, preventing stale-image backlogs.
 
+The provider request timeout limits how long inference may run; it does not
+grant motion authority for that duration. Slow results keep their original
+camera timestamp and downstream safety nodes reject them once the configured
+observation or policy age is exceeded. Real-time deployment therefore requires
+inference latency within the strictest downstream freshness budget.
+
 ## Configuration
 
 The default configuration is located at:
@@ -80,6 +94,7 @@ The implementation includes:
 - deterministic VLM assessment tests;
 - waypoint-specific deterministic fixture tests;
 - fail-closed publication tests;
+- camera capture-timestamp propagation tests;
 - ROS graph integration tests;
 - clean-shutdown validation.
 

@@ -8,6 +8,7 @@ import launch
 import launch_ros.actions
 import launch_testing.actions
 import rclpy
+from builtin_interfaces.msg import Time
 from inspectron_evidence_msgs.msg import EvidenceCapture
 from inspectron_safety_supervisor.msg import SceneAssessment
 from rclpy.qos import qos_profile_sensor_data
@@ -36,7 +37,10 @@ def generate_test_description():
                 "recommended_action": "reroute",
                 "confidence": 0.94,
                 "view_quality": 0.91,
-            }
+            },
+            "inference_failure": {
+                "unexpected": "schema",
+            },
         }
     )
 
@@ -166,12 +170,31 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
 
         self.fail(f"timed out waiting for {description}")
 
+    @staticmethod
+    def _stamp_tuple(stamp):
+        return stamp.sec, stamp.nanosec
+
+    def _matching_capture(self, assessment):
+        self._wait_until(
+            lambda: any(
+                capture.evidence_id == assessment.evidence_id for capture in self.evidence_captures
+            ),
+            timeout_seconds=5.0,
+            failure_message=("matching evidence capture was not published"),
+        )
+
+        return next(
+            capture
+            for capture in self.evidence_captures
+            if capture.evidence_id == assessment.evidence_id
+        )
+
     def test_valid_and_invalid_images_publish_safe_assessments(
         self,
     ):
         valid_image = CompressedImage()
         valid_image.header.frame_id = "aisle_a"
-        valid_image.header.stamp = self.node.get_clock().now().to_msg()
+        valid_image.header.stamp = Time(sec=10, nanosec=20)
         valid_image.format = "jpeg"
         valid_image.data = b"\xff\xd8\xff\xd9"
 
@@ -190,21 +213,12 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
         self.assertEqual(valid_assessment.confidence, 0.95)
         self.assertEqual(valid_assessment.view_quality, 0.90)
         self.assertTrue(valid_assessment.evidence_id.startswith("aisle_a-"))
-
-        self._wait_until(
-            lambda: any(
-                capture.evidence_id == valid_assessment.evidence_id
-                for capture in self.evidence_captures
-            ),
-            timeout_seconds=5.0,
-            failure_message=("matching evidence capture was not published"),
+        self.assertEqual(
+            self._stamp_tuple(valid_assessment.observed_at),
+            self._stamp_tuple(valid_image.header.stamp),
         )
 
-        valid_capture = next(
-            capture
-            for capture in self.evidence_captures
-            if capture.evidence_id == valid_assessment.evidence_id
-        )
+        valid_capture = self._matching_capture(valid_assessment)
 
         self.assertEqual(valid_capture.waypoint, "aisle_a")
         self.assertEqual(valid_capture.scene_id, "test_scene")
@@ -217,17 +231,22 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
             bytes(valid_capture.image.data),
             b"\xff\xd8\xff\xd9",
         )
+        self.assertEqual(
+            self._stamp_tuple(valid_capture.image.header.stamp),
+            self._stamp_tuple(valid_assessment.observed_at),
+        )
 
         invalid_image = CompressedImage()
         invalid_image.header.frame_id = "aisle_b"
-        invalid_image.header.stamp = self.node.get_clock().now().to_msg()
+        invalid_image.header.stamp = Time(sec=30, nanosec=40)
         invalid_image.format = "jpeg"
         invalid_image.data = b"not-a-jpeg"
 
         invalid_assessment = self._publish_until_assessment(
             image=invalid_image,
             predicate=lambda assessment: (
-                assessment.traversability == SceneAssessment.TRAVERSABILITY_UNKNOWN
+                assessment.evidence_id.startswith("aisle_b-")
+                and assessment.traversability == SceneAssessment.TRAVERSABILITY_UNKNOWN
             ),
             description="fail-closed invalid-image assessment",
         )
@@ -239,10 +258,14 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
         self.assertEqual(invalid_assessment.confidence, 0.0)
         self.assertEqual(invalid_assessment.view_quality, 0.0)
         self.assertTrue(invalid_assessment.evidence_id.startswith("aisle_b-"))
+        self.assertEqual(
+            self._stamp_tuple(invalid_assessment.observed_at),
+            self._stamp_tuple(invalid_image.header.stamp),
+        )
 
         blocked_image = CompressedImage()
         blocked_image.header.frame_id = "blocked_aisle"
-        blocked_image.header.stamp = self.node.get_clock().now().to_msg()
+        blocked_image.header.stamp = Time(sec=50, nanosec=60)
         blocked_image.format = "jpeg"
         blocked_image.data = b"\xff\xd8\xff\xd9"
 
@@ -267,3 +290,62 @@ class PerceptionBridgeGraphTest(unittest.TestCase):
             [SceneAssessment.HAZARD_DEBRIS],
         )
         self.assertTrue(blocked_assessment.evidence_id.startswith("blocked_aisle-"))
+        self.assertEqual(
+            self._stamp_tuple(blocked_assessment.observed_at),
+            self._stamp_tuple(blocked_image.header.stamp),
+        )
+
+        failed_image = CompressedImage()
+        failed_image.header.frame_id = "inference_failure"
+        failed_image.header.stamp = Time(sec=70, nanosec=80)
+        failed_image.format = "jpeg"
+        failed_image.data = b"\xff\xd8\xff\xd9"
+
+        failed_assessment = self._publish_until_assessment(
+            image=failed_image,
+            predicate=lambda assessment: (
+                assessment.evidence_id.startswith("inference_failure-")
+                and assessment.traversability == SceneAssessment.TRAVERSABILITY_UNKNOWN
+            ),
+            description="fail-closed inference assessment",
+        )
+
+        self.assertEqual(
+            failed_assessment.recommended_action,
+            SceneAssessment.ACTION_INSPECT_CLOSER,
+        )
+        self.assertEqual(
+            self._stamp_tuple(failed_assessment.observed_at),
+            self._stamp_tuple(failed_image.header.stamp),
+        )
+
+        failed_capture = self._matching_capture(failed_assessment)
+        self.assertEqual(
+            self._stamp_tuple(failed_capture.image.header.stamp),
+            self._stamp_tuple(failed_assessment.observed_at),
+        )
+
+    def test_zero_camera_stamp_is_preserved_for_fail_closed_admission(
+        self,
+    ):
+        unstamped_image = CompressedImage()
+        unstamped_image.header.frame_id = "unstamped_aisle"
+        unstamped_image.format = "jpeg"
+        unstamped_image.data = b"\xff\xd8\xff\xd9"
+
+        assessment = self._publish_until_assessment(
+            image=unstamped_image,
+            predicate=lambda message: message.evidence_id.startswith("unstamped_aisle-"),
+            description="assessment with missing camera observation time",
+        )
+
+        self.assertEqual(
+            self._stamp_tuple(assessment.observed_at),
+            (0, 0),
+        )
+
+        capture = self._matching_capture(assessment)
+        self.assertEqual(
+            self._stamp_tuple(capture.image.header.stamp),
+            self._stamp_tuple(assessment.observed_at),
+        )
