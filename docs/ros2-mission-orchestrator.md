@@ -67,6 +67,27 @@ All operator services use `std_srvs/srv/Trigger`.
 
 Motion authorization requires a valid and fresh `ACTION_PROCEED` or
 `ACTION_SLOW_DOWN` decision whose evidence ID matches the active waypoint.
+Freshness is measured from the policy's `source_observed_at` camera-observation
+time, not from callback arrival. Missing, future-dated, or expired source times
+are treated as stale decisions. The source age is deducted from the
+steady-clock policy watchdog, so delayed delivery never grants an observation
+a second full authorization lifetime. Camera, supervisor, and orchestrator
+must share a synchronized ROS clock domain; missing time or clock skew fails
+closed.
+
+Policy observation times must advance strictly. Duplicate or regressing
+decisions trigger a safety stop. A new temporal fault opens a recovery barrier
+at the orchestrator's local rejection time; a well-formed decision already on
+or before an active barrier is rejected without moving it again, allowing a
+legitimate post-stop observation to recover after older queued results drain.
+
+Rejected future timestamps are retained in a bounded 256-entry replay cache,
+so replaying one after clock catch-up remains stale. Overflow starts a
+fail-closed quarantine for twice `policy_timeout_ms`; future inputs extend it,
+and release opens a new local barrier. This is bounded operational protection.
+Permanent replay identity across arbitrary future intervals or process
+restarts requires a publisher session and monotonic source sequence in the
+message protocol.
 
 The orchestrator cancels motion when:
 

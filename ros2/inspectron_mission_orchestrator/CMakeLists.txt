@@ -37,6 +37,12 @@ if(BUILD_TESTING)
     TIMEOUT 60
   )
 
+  ament_add_pytest_test(
+    test_observation_freshness
+    test/test_observation_freshness.py
+    TIMEOUT 60
+  )
+
   add_launch_test(
     test/test_mission_orchestrator_launch.py
     TIMEOUT 40

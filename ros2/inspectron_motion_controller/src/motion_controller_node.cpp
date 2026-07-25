@@ -1,14 +1,18 @@
 #include "inspectron_motion_controller/motion_policy.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 
+#include "builtin_interfaces/msg/time.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "inspectron_mission_msgs/msg/mission_state.hpp"
 #include "inspectron_safety_supervisor/msg/policy_decision.hpp"
@@ -23,6 +27,7 @@ using inspectron::motion::PolicyMode;
 using MissionState = inspectron_mission_msgs::msg::MissionState;
 using PolicyDecision =
   inspectron_safety_supervisor::msg::PolicyDecision;
+constexpr std::size_t kMaxRejectedFuturePolicyObservations = 256;
 
 class MotionControllerNode final : public rclcpp::Node {
 public:
@@ -148,10 +153,13 @@ private:
     std::chrono::steady_clock::time_point>
   message_steady_reference(
     const rclcpp::MessageInfo & message_info,
-    const std::int64_t timeout_ms) const
+    const std::int64_t timeout_ms,
+    const builtin_interfaces::msg::Time * observation_timestamp =
+    nullptr) const
   {
     const auto steady_now = std::chrono::steady_clock::now();
-    const auto now_ns =
+    const auto ros_now_ns = get_clock()->now().nanoseconds();
+    const auto system_now_ns =
       std::chrono::duration_cast<std::chrono::nanoseconds>(
       std::chrono::system_clock::now().time_since_epoch()).count();
     const auto timeout_ns =
@@ -160,7 +168,8 @@ private:
     const auto & metadata = message_info.get_rmw_message_info();
 
     const auto timestamp_age =
-      [now_ns, timeout_ns](
+      [timeout_ns](
+      const std::int64_t now_ns,
       const std::int64_t timestamp_ns)
       -> std::optional<std::int64_t> {
         if (timestamp_ns <= 0 || timestamp_ns > now_ns) {
@@ -176,18 +185,40 @@ private:
       };
 
     const auto source_age =
-      timestamp_age(metadata.source_timestamp);
+      timestamp_age(system_now_ns, metadata.source_timestamp);
     const auto received_age =
-      timestamp_age(metadata.received_timestamp);
+      timestamp_age(system_now_ns, metadata.received_timestamp);
 
     if (!source_age || !received_age) {
       return std::nullopt;
     }
 
-    const auto metadata_age = std::chrono::nanoseconds(
+    auto oldest_age = std::chrono::nanoseconds(
       *source_age >= *received_age ?
       *source_age : *received_age);
-    return steady_now - metadata_age;
+    if (observation_timestamp != nullptr) {
+      if (observation_timestamp->sec < 0 ||
+        observation_timestamp->nanosec >= 1'000'000'000U)
+      {
+        return std::nullopt;
+      }
+
+      const auto observation_ns =
+        static_cast<std::int64_t>(observation_timestamp->sec) *
+        1'000'000'000LL +
+        static_cast<std::int64_t>(
+        observation_timestamp->nanosec);
+      const auto observation_age =
+        timestamp_age(ros_now_ns, observation_ns);
+      if (!observation_age) {
+        return std::nullopt;
+      }
+      oldest_age = std::max(
+        oldest_age,
+        std::chrono::nanoseconds(*observation_age));
+    }
+
+    return steady_now - oldest_age;
   }
 
   void revoke_policy()
@@ -196,6 +227,83 @@ private:
     policy_valid_ = false;
     policy_mode_ = PolicyMode::Stop;
     policy_evidence_id_.clear();
+  }
+
+  void reject_policy_temporally(
+    const bool advance_recovery_barrier = true)
+  {
+    if (advance_recovery_barrier) {
+      policy_recovery_barrier_ns_ =
+        std::max(
+        policy_recovery_barrier_ns_,
+        get_clock()->now().nanoseconds());
+    }
+    revoke_policy();
+  }
+
+  void prune_rejected_future_policy_observations(
+    const std::int64_t current_ns,
+    const std::chrono::steady_clock::time_point steady_now)
+  {
+    bool opened_recovery_epoch = false;
+    const auto timeout_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::milliseconds(policy_timeout_ms_)).count();
+    const auto expired_before_ns = current_ns - timeout_ns;
+    auto iterator =
+      rejected_future_policy_observations_.begin();
+    while (iterator !=
+      rejected_future_policy_observations_.end())
+    {
+      if (*iterator < expired_before_ns ||
+        *iterator <= latest_policy_observation_ns_)
+      {
+        iterator =
+          rejected_future_policy_observations_.erase(iterator);
+        opened_recovery_epoch = true;
+      } else {
+        ++iterator;
+      }
+    }
+    if (rejected_future_policy_quarantine_until_ !=
+      std::chrono::steady_clock::time_point{} &&
+      steady_now > rejected_future_policy_quarantine_until_)
+    {
+      rejected_future_policy_quarantine_until_ = {};
+      opened_recovery_epoch = true;
+    }
+    if (opened_recovery_epoch) {
+      policy_recovery_barrier_ns_ =
+        std::max(
+        policy_recovery_barrier_ns_,
+        current_ns);
+    }
+  }
+
+  void remember_rejected_future_policy_observation(
+    const std::int64_t observation_ns,
+    const std::int64_t current_ns)
+  {
+    const auto steady_now =
+      std::chrono::steady_clock::now();
+    prune_rejected_future_policy_observations(
+      current_ns,
+      steady_now);
+    if (rejected_future_policy_quarantine_until_ !=
+      std::chrono::steady_clock::time_point{})
+    {
+      return;
+    }
+
+    rejected_future_policy_observations_.insert(observation_ns);
+    if (rejected_future_policy_observations_.size() >
+      kMaxRejectedFuturePolicyObservations)
+    {
+      rejected_future_policy_observations_.clear();
+      rejected_future_policy_quarantine_until_ =
+        steady_now +
+        std::chrono::milliseconds(policy_timeout_ms_) * 2;
+    }
   }
 
   void revoke_mission_authority()
@@ -217,14 +325,97 @@ private:
     const PolicyDecision::SharedPtr decision,
     const rclcpp::MessageInfo & message_info)
   {
-    const auto steady_reference =
-      message_steady_reference(message_info, policy_timeout_ms_);
+    const auto cache_steady_now =
+      std::chrono::steady_clock::now();
+    const auto current_ns = get_clock()->now().nanoseconds();
+    const bool observed_at_well_formed =
+      decision->source_observed_at.sec >= 0 &&
+      decision->source_observed_at.nanosec < 1'000'000'000U;
+    std::int64_t observation_ns = 0;
+    if (observed_at_well_formed) {
+      observation_ns =
+        static_cast<std::int64_t>(decision->source_observed_at.sec) *
+        1'000'000'000LL +
+        static_cast<std::int64_t>(
+        decision->source_observed_at.nanosec);
+    }
 
-    if (!steady_reference) {
-      revoke_policy();
+    prune_rejected_future_policy_observations(
+      current_ns,
+      cache_steady_now);
+    const bool was_rejected_exactly_while_future =
+      observed_at_well_formed &&
+      rejected_future_policy_observations_.find(observation_ns) !=
+      rejected_future_policy_observations_.end();
+    const bool future_quarantine_active =
+      rejected_future_policy_quarantine_until_ !=
+      std::chrono::steady_clock::time_point{};
+    if (future_quarantine_active &&
+      observed_at_well_formed &&
+      observation_ns > current_ns)
+    {
+      rejected_future_policy_quarantine_until_ =
+        std::max(
+        rejected_future_policy_quarantine_until_,
+        std::chrono::steady_clock::now() +
+        std::chrono::milliseconds(policy_timeout_ms_) * 2);
+    }
+    if (was_rejected_exactly_while_future ||
+      future_quarantine_active)
+    {
+      reject_policy_temporally(
+        /*advance_recovery_barrier=*/
+        policy_recovery_barrier_ns_ == 0);
       return;
     }
 
+    if (observed_at_well_formed && observation_ns > current_ns) {
+      remember_rejected_future_policy_observation(
+        observation_ns,
+        current_ns);
+      reject_policy_temporally();
+      return;
+    }
+
+    const bool blocked_by_existing_barrier =
+      observation_ns > 0 &&
+      policy_recovery_barrier_ns_ > 0 &&
+      observation_ns <= policy_recovery_barrier_ns_;
+    if (blocked_by_existing_barrier) {
+      reject_policy_temporally(
+        /*advance_recovery_barrier=*/false);
+      return;
+    }
+
+    const auto steady_reference =
+      message_steady_reference(
+      message_info,
+      policy_timeout_ms_,
+      &decision->source_observed_at);
+
+    if (!steady_reference) {
+      reject_policy_temporally();
+      return;
+    }
+
+    if (observation_ns <= latest_policy_observation_ns_)
+    {
+      reject_policy_temporally();
+      return;
+    }
+
+    latest_policy_observation_ns_ = observation_ns;
+    policy_recovery_barrier_ns_ = 0;
+    auto rejected_future =
+      rejected_future_policy_observations_.begin();
+    while (rejected_future !=
+      rejected_future_policy_observations_.end() &&
+      *rejected_future <= observation_ns)
+    {
+      rejected_future =
+        rejected_future_policy_observations_.erase(
+        rejected_future);
+    }
     policy_received_at_ = *steady_reference;
     has_policy_ = true;
     policy_evidence_id_ = decision->evidence_id;
@@ -353,6 +544,12 @@ private:
   std::string active_goal_{};
   std::string mission_evidence_id_{};
   std::string policy_evidence_id_{};
+  std::int64_t latest_policy_observation_ns_{0};
+  std::int64_t policy_recovery_barrier_ns_{0};
+  std::set<std::int64_t>
+    rejected_future_policy_observations_;
+  std::chrono::steady_clock::time_point
+    rejected_future_policy_quarantine_until_{};
 
   std::chrono::steady_clock::time_point policy_received_at_{};
   std::chrono::steady_clock::time_point command_received_at_{};

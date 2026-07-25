@@ -50,10 +50,31 @@ reviving motion after a transport or executor interruption. An admitted
 sample's publication/receipt age is deducted from its steady-clock lifetime;
 delivery never grants a second full watchdog period.
 
-Source timestamps use the publisher's system clock, so publisher and controller
-hosts must maintain synchronized clocks. Missing metadata or clock skew fails
-closed. Once a sample is admitted, the controller uses a steady-clock watchdog
-so later system-clock changes cannot extend its lifetime.
+Policy decisions carry the camera observation time in
+`source_observed_at`. The controller validates that timestamp independently
+and uses the oldest of the observation, DDS publication, and DDS receipt ages
+as the policy's steady-clock reference. A freshly republished decision
+therefore cannot turn old visual evidence into fresh actuator authority.
+
+Policy observation times must advance strictly. A duplicate or regressing
+source time revokes policy authority. A new temporal fault opens a recovery
+barrier at the controller's local rejection time; well-formed decisions already
+on or before that barrier remain stopped without moving it again, so queued
+pre-stop messages cannot starve a post-stop recovery.
+
+The controller retains rejected future timestamps in a bounded 256-entry
+replay cache. Cache overflow starts a fail-closed quarantine for twice
+`policy_timeout_ms`; future inputs extend it, and release opens a new local
+barrier. This bounded window prevents clock-catch-up replay without allowing
+unbounded memory growth. Permanent replay identity across arbitrary future
+intervals or process restarts requires a publisher session and monotonic source
+sequence at the protocol layer.
+
+DDS publication/receipt timestamps use system time, while
+`source_observed_at` uses the ROS clock domain shared with the camera and
+controller. Those clocks must be synchronized across hosts; missing metadata
+or clock skew fails closed. Once a sample is admitted, the controller uses a
+steady-clock watchdog so later clock changes cannot extend its lifetime.
 
 The controller starts without authority and requires all of the following on
 every control tick:

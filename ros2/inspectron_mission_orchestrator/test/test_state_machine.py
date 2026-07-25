@@ -244,6 +244,34 @@ class MissionStateMachineTests(unittest.TestCase):
             "aisle_a_alt",
         )
 
+    def test_policy_age_does_not_shorten_reroute_response_window(self):
+        machine = MissionStateMachine(
+            ["aisle_a"],
+            policy_timeout_seconds=2.0,
+            reroute_timeout_seconds=0.5,
+        )
+        machine.start()
+
+        reroute = machine.apply_policy(
+            action=ACTION_REROUTE,
+            status=STATUS_VALID,
+            evidence_id="aisle_a-9.200000000-000001",
+            now=10.0,
+            policy_reference=9.2,
+        )
+
+        self.assertTrue(reroute.accepted)
+        self.assertEqual(machine.snapshot.state, MissionPhase.REROUTING)
+        self.assertIsNone(machine.watchdog(10.49))
+
+        timeout = machine.watchdog(10.51)
+        self.assertIsNotNone(timeout)
+        self.assertTrue(timeout.cancel_motion)
+        self.assertEqual(
+            machine.snapshot.state,
+            MissionPhase.SAFETY_STOPPED,
+        )
+
     def test_watchdog_and_emergency_stop(self):
         self.machine.start()
         self.machine.apply_policy(

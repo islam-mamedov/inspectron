@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import rclpy
+from builtin_interfaces.msg import Time
 from inspectron_evidence_msgs.msg import EvidenceCapture
 from inspectron_safety_supervisor.msg import SceneAssessment as SceneAssessmentMessage
 from rclpy.node import Node
@@ -39,11 +40,13 @@ class _FrameJob:
     view_index: int
     image_suffix: str
     image_data: bytes
+    observed_at: Time
 
 
 @dataclass(frozen=True, slots=True)
 class _AnalysisResult:
     assessment: SceneAssessment
+    observed_at: Time
     error_message: str | None = None
 
 
@@ -262,15 +265,12 @@ class PerceptionBridgeNode(Node):
 
         waypoint = message.header.frame_id.strip() or self.default_waypoint
 
-        stamp = message.header.stamp
-
-        if stamp.sec == 0 and stamp.nanosec == 0:
-            stamp = self.get_clock().now().to_msg()
+        observed_at = message.header.stamp
 
         evidence_id = make_evidence_id(
             waypoint=waypoint,
-            seconds=stamp.sec,
-            nanoseconds=stamp.nanosec,
+            seconds=observed_at.sec,
+            nanoseconds=observed_at.nanosec,
             sequence=self._sequence,
         )
 
@@ -289,7 +289,8 @@ class PerceptionBridgeNode(Node):
                 failure_assessment(
                     waypoint=waypoint,
                     evidence_id=evidence_id,
-                )
+                ),
+                observed_at=observed_at,
             )
             return
 
@@ -300,6 +301,7 @@ class PerceptionBridgeNode(Node):
             view_index=self._sequence - 1,
             image_suffix=image_suffix,
             image_data=image_data,
+            observed_at=observed_at,
         )
 
         try:
@@ -314,7 +316,6 @@ class PerceptionBridgeNode(Node):
         self._publish_evidence(
             job=job,
             image_format=message.format,
-            stamp=stamp,
         )
 
     def _publish_evidence(
@@ -322,14 +323,13 @@ class PerceptionBridgeNode(Node):
         *,
         job: _FrameJob,
         image_format: str,
-        stamp,
     ) -> None:
         capture = EvidenceCapture()
         capture.evidence_id = job.evidence_id
         capture.waypoint = job.waypoint
         capture.scene_id = job.scene_id
         capture.view_index = job.view_index
-        capture.image.header.stamp = stamp
+        capture.image.header.stamp = job.observed_at
         capture.image.header.frame_id = job.waypoint
         capture.image.format = image_format
         capture.image.data = job.image_data
@@ -373,13 +373,17 @@ class PerceptionBridgeNode(Node):
                     perception = SiteSafetyVLMPerception(_FixtureVLMClient(fixture_response))
 
                 assessment = perception.analyze(frame)
-                result = _AnalysisResult(assessment=assessment)
+                result = _AnalysisResult(
+                    assessment=assessment,
+                    observed_at=job.observed_at,
+                )
             except Exception as error:
                 result = _AnalysisResult(
                     assessment=failure_assessment(
                         waypoint=job.waypoint,
                         evidence_id=job.evidence_id,
                     ),
+                    observed_at=job.observed_at,
                     error_message=str(error)[:500],
                 )
             finally:
@@ -403,16 +407,21 @@ class PerceptionBridgeNode(Node):
                     f"assessment: {result.error_message}"
                 )
 
-            self._publish_assessment(result.assessment)
+            self._publish_assessment(
+                result.assessment,
+                observed_at=result.observed_at,
+            )
             self._results.task_done()
 
     def _publish_assessment(
         self,
         assessment: SceneAssessment,
+        *,
+        observed_at: Time,
     ) -> None:
         message = assessment_to_message(
             assessment,
-            observed_at=self.get_clock().now().to_msg(),
+            observed_at=observed_at,
         )
         self._assessment_publisher.publish(message)
 
