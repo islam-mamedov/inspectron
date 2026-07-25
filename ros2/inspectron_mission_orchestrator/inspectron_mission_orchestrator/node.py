@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 
 import rclpy
@@ -46,11 +47,13 @@ class MissionOrchestratorNode(Node):
         self.declare_parameter("policy_timeout_ms", 750)
         self.declare_parameter("reroute_timeout_ms", 5000)
         self.declare_parameter("watchdog_rate_hz", 20.0)
+        self.declare_parameter("state_heartbeat_rate_hz", 4.0)
 
         waypoints = list(self.get_parameter("waypoints").value)
         policy_timeout_ms = int(self.get_parameter("policy_timeout_ms").value)
         reroute_timeout_ms = int(self.get_parameter("reroute_timeout_ms").value)
         watchdog_rate_hz = float(self.get_parameter("watchdog_rate_hz").value)
+        state_heartbeat_rate_hz = float(self.get_parameter("state_heartbeat_rate_hz").value)
 
         if policy_timeout_ms <= 0:
             raise ValueError("policy_timeout_ms must be positive")
@@ -58,8 +61,11 @@ class MissionOrchestratorNode(Node):
         if reroute_timeout_ms <= 0:
             raise ValueError("reroute_timeout_ms must be positive")
 
-        if watchdog_rate_hz <= 0.0:
-            raise ValueError("watchdog_rate_hz must be positive")
+        if not math.isfinite(watchdog_rate_hz) or watchdog_rate_hz <= 0.0:
+            raise ValueError("watchdog_rate_hz must be finite and positive")
+
+        if not math.isfinite(state_heartbeat_rate_hz) or state_heartbeat_rate_hz <= 0.0:
+            raise ValueError("state_heartbeat_rate_hz must be finite and positive")
 
         self.machine = MissionStateMachine(
             waypoints,
@@ -158,6 +164,11 @@ class MissionOrchestratorNode(Node):
         self.watchdog_timer = self.create_timer(
             1.0 / watchdog_rate_hz,
             self._on_watchdog,
+        )
+        self._last_state_message: MissionStateMessage | None = None
+        self.state_heartbeat_timer = self.create_timer(
+            1.0 / state_heartbeat_rate_hz,
+            self._publish_state_heartbeat,
         )
 
         self._publish_state()
@@ -285,7 +296,18 @@ class MissionOrchestratorNode(Node):
         message.motion_authorized = snapshot.motion_authorized
         message.updated_at = self.get_clock().now().to_msg()
 
+        self._last_state_message = message
         self.state_publisher.publish(message)
+
+    def _publish_state_heartbeat(self) -> None:
+        message = self._last_state_message
+
+        if (
+            message is not None
+            and message.state == MissionStateMessage.STATE_MOVING
+            and message.motion_authorized
+        ):
+            self.state_publisher.publish(message)
 
 
 def main(args=None) -> None:

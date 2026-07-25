@@ -119,6 +119,7 @@ def create_pipeline_nodes(
                 "policy_timeout_ms": orchestrator_policy_timeout_ms,
                 "reroute_timeout_ms": 5000,
                 "watchdog_rate_hz": 20.0,
+                "state_heartbeat_rate_hz": 4.0,
             }
         ],
         remappings=remappings,
@@ -133,6 +134,7 @@ def create_pipeline_nodes(
             {
                 "policy_timeout_ms": 1500,
                 "command_timeout_ms": 250,
+                "mission_state_timeout_ms": 1500,
                 "slow_scale": 0.35,
                 "max_linear_speed": 0.40,
                 "max_angular_speed": 0.80,

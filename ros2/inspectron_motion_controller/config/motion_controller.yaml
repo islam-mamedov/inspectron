@@ -2,6 +2,7 @@ motion_controller:
   ros__parameters:
     policy_timeout_ms: 750
     command_timeout_ms: 250
+    mission_state_timeout_ms: 1000
     slow_scale: 0.35
     max_linear_speed: 0.40
     max_angular_speed: 0.80

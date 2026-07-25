@@ -40,6 +40,7 @@ class PipelineTestHarness:
         self.policies: list[PolicyDecision] = []
         self.assessments: list[SceneAssessment] = []
         self.evidence: list[EvidenceCapture] = []
+        self.desired_cmd_vels: list[Twist] = []
         self.cmd_vels: list[Twist] = []
         self.report_statuses: list[ReportStatus] = []
         self.reroute_requests: list[String] = []
@@ -89,6 +90,12 @@ class PipelineTestHarness:
             Twist,
             self._name("/cmd_vel"),
             self._on_cmd_vel,
+            volatile,
+        )
+        self.desired_cmd_vel_subscription = self.node.create_subscription(
+            Twist,
+            self._name("/inspectron/desired_cmd_vel"),
+            self._on_desired_cmd_vel,
             volatile,
         )
         self.reroute_request_subscription = self.node.create_subscription(
@@ -157,6 +164,10 @@ class PipelineTestHarness:
         self.cmd_vels.append(message)
         self.event_log.append(("cmd_vel", message))
 
+    def _on_desired_cmd_vel(self, message: Twist) -> None:
+        self.desired_cmd_vels.append(message)
+        self.event_log.append(("desired_cmd_vel", message))
+
     def _on_reroute_request(self, message: String) -> None:
         self.reroute_requests.append(message)
         self.event_log.append(("reroute_request", message))
@@ -175,6 +186,7 @@ class PipelineTestHarness:
         self.node.destroy_subscription(self.assessment_subscription)
         self.node.destroy_subscription(self.evidence_subscription)
         self.node.destroy_subscription(self.cmd_vel_subscription)
+        self.node.destroy_subscription(self.desired_cmd_vel_subscription)
         self.node.destroy_subscription(self.reroute_request_subscription)
         self.node.destroy_node()
 
@@ -210,6 +222,7 @@ class PipelineTestHarness:
                 and self.assessment_subscription.get_publisher_count() > 0
                 and self.evidence_subscription.get_publisher_count() > 0
                 and self.cmd_vel_subscription.get_publisher_count() > 0
+                and self.desired_cmd_vel_subscription.get_publisher_count() > 0
                 and self.reroute_request_subscription.get_publisher_count() > 0
                 and self.reroute_target_publisher.get_subscription_count() > 0
             ),

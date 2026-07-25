@@ -2,7 +2,7 @@
 <package format="3">
   <name>inspectron_motion_controller</name>
   <version>0.1.0</version>
-  <description>Fail-closed motion controller for Inspectron policy decisions.</description>
+  <description>Fail-closed controller for Inspectron policy and mission authority.</description>
 
   <maintainer email="203401856+islam-mamedov@users.noreply.github.com">
     Islam Mamedov
@@ -13,6 +13,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>geometry_msgs</depend>
+  <depend>inspectron_mission_msgs</depend>
   <depend>inspectron_safety_supervisor</depend>
   <depend>rclcpp</depend>
 

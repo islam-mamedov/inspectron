@@ -45,7 +45,11 @@ motion controller remains responsible for `/cmd_vel`.
 | `/inspectron/mission/reroute_request` | `std_msgs/msg/String` |
 
 The mission-state topic uses transient-local durability so a newly connected
-observer receives the latest state.
+observer receives the latest state. While motion is authorized, the
+orchestrator republishes the same `MOVING` state as a heartbeat. Its
+`updated_at` remains the logical transition time, so evidence reports
+de-duplicate the heartbeat while the motion controller can still detect an
+orchestrator failure with its steady-clock watchdog.
 
 ## Operator services
 
@@ -92,6 +96,7 @@ before another mission can start.
 | `policy_timeout_ms` | `750` | Maximum policy age while moving |
 | `reroute_timeout_ms` | `5000` | Maximum wait for a reroute target |
 | `watchdog_rate_hz` | `20.0` | Mission watchdog frequency |
+| `state_heartbeat_rate_hz` | `4.0` | Authorized-motion state heartbeat frequency |
 
 Invalid parameters cause startup to fail.
 
